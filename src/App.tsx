@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import NotFound from "./pages/NotFound";
 import Layout from "./components/layout/Layout";
 import Dashboard from "./pages/Dashboard";
@@ -13,6 +13,9 @@ import ClientForm from "./pages/ClientForm";
 import Newsletters from "./pages/Newsletters";
 import NewsletterForm from "./pages/NewsletterForm";
 import Settings from "./pages/Settings";
+import Login from "./pages/Login";
+import KanbanBoard from "./pages/KanbanBoard";
+import AuthGuard from "./components/auth/AuthGuard";
 
 const queryClient = new QueryClient();
 
@@ -23,13 +26,58 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Layout><Dashboard /></Layout>} />
-          <Route path="/clients" element={<Layout><Clients /></Layout>} />
-          <Route path="/clients/:id" element={<Layout><ClientDetail /></Layout>} />
-          <Route path="/clients/new" element={<Layout><ClientForm /></Layout>} />
-          <Route path="/newsletters" element={<Layout><Newsletters /></Layout>} />
-          <Route path="/newsletters/new" element={<Layout><NewsletterForm /></Layout>} />
-          <Route path="/settings" element={<Layout><Settings /></Layout>} />
+          {/* Public routes */}
+          <Route path="/login" element={<Login />} />
+          
+          {/* Protected routes */}
+          <Route path="/" element={
+            <AuthGuard>
+              <Layout><Dashboard /></Layout>
+            </AuthGuard>
+          } />
+          
+          <Route path="/clients" element={
+            <AuthGuard>
+              <Layout><Clients /></Layout>
+            </AuthGuard>
+          } />
+          
+          <Route path="/clients/kanban" element={
+            <AuthGuard>
+              <Layout><KanbanBoard /></Layout>
+            </AuthGuard>
+          } />
+          
+          <Route path="/clients/:id" element={
+            <AuthGuard>
+              <Layout><ClientDetail /></Layout>
+            </AuthGuard>
+          } />
+          
+          <Route path="/clients/new" element={
+            <AuthGuard>
+              <Layout><ClientForm /></Layout>
+            </AuthGuard>
+          } />
+          
+          <Route path="/newsletters" element={
+            <AuthGuard>
+              <Layout><Newsletters /></Layout>
+            </AuthGuard>
+          } />
+          
+          <Route path="/newsletters/new" element={
+            <AuthGuard>
+              <Layout><NewsletterForm /></Layout>
+            </AuthGuard>
+          } />
+          
+          <Route path="/settings" element={
+            <AuthGuard>
+              <Layout><Settings /></Layout>
+            </AuthGuard>
+          } />
+          
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
