@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -43,12 +42,10 @@
   }
 
   body {
-    @apply bg-gradient-to-br from-crm-background-from to-crm-background-to min-h-screen text-crm-text;
-    background-image: url('/lovable-uploads/28399646-43dc-46d4-82fb-bd44b253eb5f.png');
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
-    background-color: transparent;
+    @apply text-crm-text;
+    background: #0a0d27;
+    background-image: linear-gradient(to bottom right, #0a0d27, #0f133e);
+    min-height: 100vh;
   }
 }
 
