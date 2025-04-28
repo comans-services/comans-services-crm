@@ -44,10 +44,6 @@
 
   body {
     @apply bg-gradient-to-br from-crm-background-from to-crm-background-to min-h-screen text-crm-text;
-    background-image: url('/lovable-uploads/28399646-43dc-46d4-82fb-bd44b253eb5f.png');
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
   }
 }
 
@@ -56,7 +52,7 @@
 }
 
 .card {
-  @apply bg-black/40 backdrop-blur-sm border border-white/20 rounded-crm shadow-lg p-6;
+  @apply bg-white/10 backdrop-blur-sm border border-white/20 rounded-crm shadow-lg p-6;
 }
 
 .hover-scale {
@@ -69,40 +65,4 @@
 
 .nav-item.active {
   @apply bg-white/10 text-white;
-}
-
-/* Custom scrollbar for kanban columns */
-.overflow-y-auto::-webkit-scrollbar {
-  width: 8px;
-}
-
-.overflow-y-auto::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.overflow-y-auto::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
-}
-
-.overflow-y-auto::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-/* Horizontal scrollbar for kanban board */
-.overflow-x-auto::-webkit-scrollbar {
-  height: 8px;
-}
-
-.overflow-x-auto::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.overflow-x-auto::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
-}
-
-.overflow-x-auto::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
 }
