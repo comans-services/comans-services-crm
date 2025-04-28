@@ -1,14 +1,15 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Mail, Settings } from 'lucide-react';
+import { LayoutDashboard, Users, Mail, Settings, Trello } from 'lucide-react';
 
 const Sidebar = () => {
   const location = useLocation();
   
   const navItems = [
     { name: 'Dashboard', path: '/', icon: <LayoutDashboard size={20} /> },
-    { name: 'Clients', path: '/clients', icon: <Users size={20} /> },
+    { name: 'Clients List', path: '/clients', icon: <Users size={20} /> },
+    { name: 'Client Pipeline', path: '/clients/kanban', icon: <Trello size={20} /> },
     { name: 'Newsletters', path: '/newsletters', icon: <Mail size={20} /> },
     { name: 'Settings', path: '/settings', icon: <Settings size={20} /> },
   ];
