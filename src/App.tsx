@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,6 +17,7 @@ import Login from "./pages/Login";
 import KanbanBoard from "./pages/KanbanBoard";
 import AuthGuard from "./components/auth/AuthGuard";
 import TeamManagement from "./pages/TeamManagement";
+import CommunicationHistory from "./pages/CommunicationHistory";
 
 const queryClient = new QueryClient();
 
@@ -85,7 +87,7 @@ const App = () => (
           <Route path="/communications" element={
             <AuthGuard>
               <Layout>
-                <Clients />
+                <CommunicationHistory />
               </Layout>
             </AuthGuard>
           } />

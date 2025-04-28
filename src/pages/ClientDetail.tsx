@@ -1,18 +1,22 @@
 
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Mail, Phone, Building, User, FileText, Download } from 'lucide-react';
+import { ArrowLeft, Edit, Mail, Phone, Building, User, FileText, Upload } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getMockProspectById } from '@/services/mockDataService';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/components/ui/use-toast';
+import DocumentUploader from '@/components/clients/DocumentUploader';
+import ActionItemsList from '@/components/clients/ActionItemsList';
+import { ActionItem } from '@/services/mockAiService';
 
 const ClientDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const clientId = id || '';
+  const [actionItems, setActionItems] = useState<ActionItem[]>([]);
   
   // Fetch client data using React Query
   const { data: client, isLoading, error } = useQuery({
@@ -21,19 +25,8 @@ const ClientDetail = () => {
     enabled: !!clientId,
   });
 
-  const handleExportPdf = () => {
-    toast({
-      title: "PDF Export",
-      description: "Generating PDF report. Your download will begin shortly.",
-    });
-    
-    // In real implementation, this would trigger a PDF generation
-    setTimeout(() => {
-      toast({
-        title: "PDF Ready",
-        description: "Your PDF has been generated and downloaded.",
-      });
-    }, 1500);
+  const handleActionItemsExtracted = (items: ActionItem[]) => {
+    setActionItems(prevItems => [...items, ...prevItems]);
   };
   
   if (isLoading) {
@@ -85,10 +78,6 @@ const ClientDetail = () => {
           </div>
         </div>
         <div className="flex gap-3">
-          <Button className="btn-primary" onClick={handleExportPdf}>
-            <FileText size={16} className="mr-2" />
-            Export as PDF
-          </Button>
           <Button className="btn-primary">
             <Edit size={16} className="mr-2" />
             Edit Client
@@ -167,6 +156,21 @@ const ClientDetail = () => {
       </div>
       
       <div className="mt-8">
+        <DocumentUploader 
+          clientId={clientId} 
+          clientName={`${client.first_name} ${client.last_name}`}
+          onActionItemsExtracted={handleActionItemsExtracted}
+        />
+
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="text-xl font-bold">AI Generated Action Items</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ActionItemsList items={actionItems} />
+          </CardContent>
+        </Card>
+        
         <Card>
           <CardHeader>
             <CardTitle className="text-xl font-bold">Email Communication History</CardTitle>
@@ -185,7 +189,7 @@ const ClientDetail = () => {
                         </p>
                       </div>
                       <Button variant="outline" size="sm">
-                        <Download size={16} className="mr-2" /> Export
+                        <Upload size={16} className="mr-2" /> Export
                       </Button>
                     </div>
                     <div className="mt-3 bg-white/5 p-4 rounded-md">
