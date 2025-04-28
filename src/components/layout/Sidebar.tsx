@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Mail, Settings, UsersRound } from 'lucide-react';
+import { LayoutDashboard, Users, Mail, Settings, UsersRound, MessageSquare } from 'lucide-react';
 
 interface SidebarProps {
   isExpanded: boolean;
@@ -12,8 +12,8 @@ interface SidebarLinkProps {
   icon: React.ReactNode;
   label: string;
   isExpanded: boolean;
-	activeIndex: number;
-	index: number;
+  activeIndex: number;
+  index: number;
 }
 
 const SidebarLink = ({ to, icon, label, isExpanded, activeIndex, index }: SidebarLinkProps) => {
@@ -34,6 +34,7 @@ const Sidebar = ({ isExpanded, onToggle }: SidebarProps) => {
   const links = [
     { to: "/", label: "Dashboard", icon: <LayoutDashboard /> },
     { to: "/clients", label: "Clients", icon: <Users /> },
+    { to: "/communications", label: "Communication Frequency", icon: <MessageSquare /> },
     { to: "/newsletters", label: "Newsletters", icon: <Mail /> },
     { to: "/team", label: "Team", icon: <UsersRound /> },
     { to: "/settings", label: "Settings", icon: <Settings /> },
@@ -47,7 +48,7 @@ const Sidebar = ({ isExpanded, onToggle }: SidebarProps) => {
   });
 
   return (
-    <div className={`fixed top-0 left-0 h-full bg-crm-background border-r border-white/5 transition-all duration-300 ease-in-out ${isExpanded ? 'w-72' : 'w-20'} z-50`}>
+    <div className={`fixed top-0 left-0 h-full bg-[#1EAEDB] border-r border-white/5 transition-all duration-300 ease-in-out ${isExpanded ? 'w-72' : 'w-20'} z-50`}>
       <div className="p-4">
         <button onClick={onToggle} className="text-white/70 hover:text-white transition-colors">
           {isExpanded ? 'Collapse' : 'Expand'}
@@ -61,8 +62,8 @@ const Sidebar = ({ isExpanded, onToggle }: SidebarProps) => {
             icon={link.icon}
             label={link.label}
             isExpanded={isExpanded}
-						activeIndex={activeIndex}
-						index={index}
+            activeIndex={activeIndex}
+            index={index}
           />
         ))}
       </nav>

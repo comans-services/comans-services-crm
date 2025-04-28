@@ -92,7 +92,7 @@ const Dashboard = () => {
         <div className="card lg:col-span-2">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold">Communication Frequency</h2>
-            <Button variant="outline" size="sm" className="text-white/70" onClick={() => navigate('/clients')}>
+            <Button variant="outline" size="sm" className="bg-crm-accent text-white hover:bg-crm-accent/90" onClick={() => navigate('/clients')}>
               View All <ArrowRight className="ml-2" size={16} />
             </Button>
           </div>
@@ -132,7 +132,7 @@ const Dashboard = () => {
           
           {prospects.length > 5 && (
             <div className="mt-4 text-center">
-              <Button variant="link" onClick={() => navigate('/clients')}>
+              <Button variant="link" onClick={() => navigate('/clients')} className="text-white">
                 View all {prospects.length} clients
               </Button>
             </div>

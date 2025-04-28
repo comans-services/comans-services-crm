@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Search, Plus, Edit, MoreVertical, Users, Building } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -17,19 +16,16 @@ const Clients = () => {
   const [currentTab, setCurrentTab] = useState('all');
   const navigate = useNavigate();
 
-  // Fetch all clients
   const { data: clients = [], isLoading: isLoadingClients } = useQuery({
     queryKey: ['prospects'],
     queryFn: getMockProspects,
   });
   
-  // Fetch clients by company
   const { data: companiesMap = {}, isLoading: isLoadingCompanies } = useQuery({
     queryKey: ['companies'],
     queryFn: getProspectsByCompany,
   });
 
-  // Filter clients based on search term
   const filteredClients = clients.filter(client => 
     client.first_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     client.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -89,7 +85,7 @@ const Clients = () => {
                     {filteredClients.map((client) => (
                       <tr key={client.id} className="border-b border-white/10 hover:bg-white/5 transition-colors">
                         <td className="py-4 px-4">
-                          <div className={`w-3 h-3 rounded-full bg-${client.statusColor}`}></div>
+                          <div className={`w-3 h-3 rounded-full bg-${client.statusColor}`} title={`${client.daysSinceLastContact} days since last contact`}></div>
                         </td>
                         <td className="py-4 px-4">
                           <Link to={`/clients/${client.id}`} className="font-medium hover:text-crm-accent transition-colors">
