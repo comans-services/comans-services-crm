@@ -84,7 +84,9 @@ const App = () => (
           
           <Route path="/communications" element={
             <AuthGuard>
-              <Layout><Clients /></Layout>
+              <Layout>
+                <Clients />
+              </Layout>
             </AuthGuard>
           } />
           

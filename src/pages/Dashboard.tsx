@@ -17,7 +17,7 @@ const StatCard = ({ title, value, icon, color }: { title: string; value: string 
         <h3 className="text-2xl font-bold mt-1">{value}</h3>
       </div>
       <div className={`w-12 h-12 rounded-full flex items-center justify-center ${color}`}>
-        {React.cloneElement(icon as React.ReactElement, { size: 20, className: 'stroke-2' })}
+        {React.cloneElement(icon as React.ReactElement, { size: 24, className: 'stroke-2' })}
       </div>
     </div>
   </div>

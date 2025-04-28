@@ -34,7 +34,7 @@ const Sidebar = ({ isExpanded, onToggle }: SidebarProps) => {
   const links = [
     { to: "/", label: "Dashboard", icon: <LayoutDashboard /> },
     { to: "/clients", label: "Clients", icon: <Users /> },
-    { to: "/communications", label: "Communication Frequency", icon: <MessageSquare /> },
+    { to: "/communications", label: "Communication History", icon: <MessageSquare /> },
     { to: "/newsletters", label: "Newsletters", icon: <Mail /> },
     { to: "/team", label: "Team", icon: <UsersRound /> },
     { to: "/settings", label: "Settings", icon: <Settings /> },
@@ -48,7 +48,7 @@ const Sidebar = ({ isExpanded, onToggle }: SidebarProps) => {
   });
 
   return (
-    <div className={`fixed top-0 left-0 h-full bg-[#1EAEDB] border-r border-white/5 transition-all duration-300 ease-in-out ${isExpanded ? 'w-72' : 'w-20'} z-50`}>
+    <div className={`fixed top-0 left-0 h-full bg-[#0a0d27] border-r border-white/5 transition-all duration-300 ease-in-out ${isExpanded ? 'w-72' : 'w-20'} z-50`}>
       <div className="p-4">
         <button onClick={onToggle} className="text-white/70 hover:text-white transition-colors">
           {isExpanded ? 'Collapse' : 'Expand'}
