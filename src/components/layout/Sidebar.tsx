@@ -17,7 +17,7 @@ const Sidebar = () => {
   return (
     <div className="w-64 h-screen bg-black/20 backdrop-blur-md border-r border-white/10 flex flex-col fixed left-0 top-0">
       <div className="p-6">
-        <h1 className="text-2xl font-bold text-white">EmberCRM</h1>
+        <h1 className="text-2xl font-bold text-white">ComansServicesCRM</h1>
       </div>
       
       <nav className="flex-1 px-3 py-4">

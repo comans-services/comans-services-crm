@@ -10,7 +10,7 @@ const StatCard = ({ title, value, icon, color }: { title: string; value: string 
         <h3 className="text-2xl font-bold mt-1">{value}</h3>
       </div>
       <div className={`w-12 h-12 rounded-full flex items-center justify-center ${color}`}>
-        {icon}
+        {React.cloneElement(icon as React.ReactElement, { size: 20, className: 'stroke-2' })}
       </div>
     </div>
   </div>
@@ -28,25 +28,25 @@ const Dashboard = () => {
         <StatCard 
           title="Total Clients" 
           value={124} 
-          icon={<Users size={24} />}
+          icon={<Users />}
           color="bg-blue-500/20 text-blue-500"
         />
         <StatCard 
           title="New Clients" 
           value={8} 
-          icon={<TrendingUp size={24} />}
+          icon={<TrendingUp />}
           color="bg-green-500/20 text-green-500"
         />
         <StatCard 
           title="Newsletters Sent" 
           value={36} 
-          icon={<Mail size={24} />}
+          icon={<Mail />}
           color="bg-crm-accent/20 text-crm-accent"
         />
         <StatCard 
           title="Scheduled" 
           value={2} 
-          icon={<Calendar size={24} />}
+          icon={<Calendar />}
           color="bg-purple-500/20 text-purple-500"
         />
       </div>
