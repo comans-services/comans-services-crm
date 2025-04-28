@@ -9,9 +9,9 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-transparent">
       <Sidebar />
-      <div className="ml-64 flex-1 p-8 animate-fade-in">
+      <div className="flex-1 ml-0 md:ml-72 p-4 md:p-8 animate-fade-in">
         <div className="flex justify-end mb-4">
           <UserMenu />
         </div>
