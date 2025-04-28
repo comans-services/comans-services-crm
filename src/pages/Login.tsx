@@ -32,7 +32,7 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-crm-background-from to-crm-background-to">
       <div className="w-full max-w-md p-8 space-y-8 card backdrop-blur-lg">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-white">EmberCRM</h1>
+          <h1 className="text-3xl font-bold text-white">ComansServicesCRM</h1>
           <p className="mt-2 text-white/75">Sign in to access your dashboard</p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
