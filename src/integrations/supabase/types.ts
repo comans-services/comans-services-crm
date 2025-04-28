@@ -9,13 +9,93 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      prospect_profile: {
+        Row: {
+          created_at: string
+          email: string
+          first_name: string
+          id: string
+          last_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          first_name: string
+          id?: string
+          last_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sales_tracking: {
+        Row: {
+          body_text: string | null
+          created_at: string
+          date_of_communication: string
+          id: string
+          prospect_first_name: string
+          prospect_id: string
+          prospect_last_name: string
+          salesperson_email: string
+          subject_text: string
+          updated_at: string
+        }
+        Insert: {
+          body_text?: string | null
+          created_at?: string
+          date_of_communication?: string
+          id?: string
+          prospect_first_name: string
+          prospect_id: string
+          prospect_last_name: string
+          salesperson_email: string
+          subject_text: string
+          updated_at?: string
+        }
+        Update: {
+          body_text?: string | null
+          created_at?: string
+          date_of_communication?: string
+          id?: string
+          prospect_first_name?: string
+          prospect_id?: string
+          prospect_last_name?: string
+          salesperson_email?: string
+          subject_text?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_tracking_prospect_id_fkey"
+            columns: ["prospect_id"]
+            isOneToOne: false
+            referencedRelation: "prospect_profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_contact_status_color: {
+        Args: { days_since_last_contact: number }
+        Returns: string
+      }
+      get_days_since_last_contact: {
+        Args: { last_contact: string }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never

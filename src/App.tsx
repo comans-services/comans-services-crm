@@ -16,6 +16,7 @@ import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import KanbanBoard from "./pages/KanbanBoard";
 import AuthGuard from "./components/auth/AuthGuard";
+import TeamManagement from "./pages/TeamManagement";
 
 const queryClient = new QueryClient();
 
@@ -69,6 +70,12 @@ const App = () => (
           <Route path="/newsletters/new" element={
             <AuthGuard>
               <Layout><NewsletterForm /></Layout>
+            </AuthGuard>
+          } />
+          
+          <Route path="/team" element={
+            <AuthGuard>
+              <Layout><TeamManagement /></Layout>
             </AuthGuard>
           } />
           

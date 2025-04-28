@@ -1,45 +1,66 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Mail, Phone, Building, User } from 'lucide-react';
-
-// Sample client data
-const SAMPLE_CLIENTS = [
-  { id: 1, name: 'John Smith', company: 'Acme Corp', email: 'john@acmecorp.com', phone: '(123) 456-7890', 
-    notes: 'Key client in the manufacturing sector. Prefers quarterly newsletters with industry updates.',
-    lastContactDate: '2023-04-10', 
-    address: '123 Main Street, Suite 400, New York, NY 10001' },
-  { id: 2, name: 'Lisa Johnson', company: 'Wayne Industries', email: 'lisa@wayneindustries.com', phone: '(234) 567-8901',
-    notes: 'Interested in our premium newsletter package. Follow up in May about the annual subscription.',
-    lastContactDate: '2023-03-28',
-    address: '456 Park Avenue, Chicago, IL 60601' },
-  { id: 3, name: 'Michael Brown', company: 'Stark Enterprises', email: 'michael@starkent.com', phone: '(345) 678-9012',
-    notes: 'Tech-focused client, prefers newsletters with cutting-edge industry innovations.',
-    lastContactDate: '2023-04-02',
-    address: '789 Ocean Drive, Miami, FL 33139' },
-];
+import { ArrowLeft, Edit, Mail, Phone, Building, User, FileText, Download } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { getMockProspectById } from '@/services/mockDataService';
+import { format } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { toast } from '@/components/ui/use-toast';
 
 const ClientDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const clientId = parseInt(id || '0');
+  const clientId = id || '';
   
-  // Find the client with the matching id
-  const client = SAMPLE_CLIENTS.find(c => c.id === clientId);
+  // Fetch client data using React Query
+  const { data: client, isLoading, error } = useQuery({
+    queryKey: ['client', clientId],
+    queryFn: () => getMockProspectById(clientId),
+    enabled: !!clientId,
+  });
+
+  const handleExportPdf = () => {
+    toast({
+      title: "PDF Export",
+      description: "Generating PDF report. Your download will begin shortly.",
+    });
+    
+    // In real implementation, this would trigger a PDF generation
+    setTimeout(() => {
+      toast({
+        title: "PDF Ready",
+        description: "Your PDF has been generated and downloaded.",
+      });
+    }, 1500);
+  };
   
-  if (!client) {
+  if (isLoading) {
+    return (
+      <div className="text-center py-20">
+        <h2 className="text-2xl font-bold mb-4">Loading client details...</h2>
+      </div>
+    );
+  }
+  
+  if (error || !client) {
     return (
       <div className="text-center py-20">
         <h2 className="text-2xl font-bold mb-4">Client Not Found</h2>
-        <button 
+        <Button 
           className="btn-primary"
           onClick={() => navigate('/clients')}
         >
           Back to Clients
-        </button>
+        </Button>
       </div>
     );
   }
+
+  const communications = client.communications || [];
+  const statusColorClass = `bg-${client.statusColor}`;
+  const textColorClass = `text-${client.statusColor}`;
 
   return (
     <div>
@@ -52,11 +73,27 @@ const ClientDetail = () => {
       </button>
       
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">{client.name}</h1>
-        <button className="btn-primary">
-          <Edit size={16} className="mr-2" />
-          Edit Client
-        </button>
+        <div className="flex items-center">
+          <h1 className="text-3xl font-bold mr-4">{client.first_name} {client.last_name}</h1>
+          <div className={`px-3 py-1 rounded-full flex items-center ${statusColorClass} bg-opacity-20`}>
+            <div className={`w-3 h-3 rounded-full ${statusColorClass} mr-2`}></div>
+            <span className={`text-sm font-medium ${textColorClass}`}>
+              {client.daysSinceLastContact !== null 
+                ? `${client.daysSinceLastContact} days since last contact` 
+                : 'No contact history'}
+            </span>
+          </div>
+        </div>
+        <div className="flex gap-3">
+          <Button className="btn-primary" onClick={handleExportPdf}>
+            <FileText size={16} className="mr-2" />
+            Export as PDF
+          </Button>
+          <Button className="btn-primary">
+            <Edit size={16} className="mr-2" />
+            Edit Client
+          </Button>
+        </div>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -70,7 +107,7 @@ const ClientDetail = () => {
               </div>
               <div>
                 <p className="text-sm text-white/70">Full Name</p>
-                <p className="font-medium">{client.name}</p>
+                <p className="font-medium">{client.first_name} {client.last_name}</p>
               </div>
             </div>
             
@@ -80,7 +117,7 @@ const ClientDetail = () => {
               </div>
               <div>
                 <p className="text-sm text-white/70">Company</p>
-                <p className="font-medium">{client.company}</p>
+                <p className="font-medium">{client.company.charAt(0).toUpperCase() + client.company.slice(1)}</p>
               </div>
             </div>
             
@@ -100,53 +137,71 @@ const ClientDetail = () => {
               </div>
               <div>
                 <p className="text-sm text-white/70">Phone</p>
-                <p className="font-medium">{client.phone}</p>
+                <p className="font-medium">(555) 123-4567</p>
               </div>
             </div>
-          </div>
-          
-          <div className="mt-6 pt-6 border-t border-white/10">
-            <p className="text-sm text-white/70 mb-2">Address</p>
-            <p>{client.address}</p>
           </div>
         </div>
         
         <div className="card">
-          <h2 className="text-xl font-bold mb-4">Client Notes</h2>
-          <p className="text-white/90">{client.notes}</p>
+          <h2 className="text-xl font-bold mb-4">Status Information</h2>
+          <div className="mb-6">
+            <p className="text-sm text-white/70 mb-2">Next Recommended Action</p>
+            <p className="text-white/90 font-medium">{client.recommendedAction}</p>
+          </div>
           
-          <div className="mt-6 pt-6 border-t border-white/10">
-            <p className="text-sm text-white/70">Last Contact Date</p>
-            <p className="font-medium">{client.lastContactDate}</p>
+          <div className="mb-6">
+            <p className="text-sm text-white/70 mb-2">Last Contact Date</p>
+            <p className="font-medium">
+              {client.engagement.last_contact_date 
+                ? format(new Date(client.engagement.last_contact_date), 'MMMM d, yyyy') 
+                : 'No contact recorded'}
+            </p>
+          </div>
+          
+          <div className="pt-4 border-t border-white/10">
+            <p className="text-sm text-white/70 mb-2">Client Since</p>
+            <p className="font-medium">{format(new Date(client.created_at), 'MMMM d, yyyy')}</p>
           </div>
         </div>
       </div>
       
       <div className="mt-8">
-        <div className="card">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold">Newsletter History</h2>
-            <button className="btn-primary">Send Newsletter</button>
-          </div>
-          
-          <div className="border-b border-white/10 pb-4 mb-4">
-            <p className="font-medium">Q1 Industry Updates</p>
-            <p className="text-sm text-white/70">Sent on April 5, 2023</p>
-            <p className="text-xs text-green-400 mt-1">Opened</p>
-          </div>
-          
-          <div className="border-b border-white/10 pb-4 mb-4">
-            <p className="font-medium">March Product Updates</p>
-            <p className="text-sm text-white/70">Sent on March 12, 2023</p>
-            <p className="text-xs text-green-400 mt-1">Opened</p>
-          </div>
-          
-          <div>
-            <p className="font-medium">February Newsletter</p>
-            <p className="text-sm text-white/70">Sent on February 8, 2023</p>
-            <p className="text-xs text-white/50 mt-1">Not opened</p>
-          </div>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl font-bold">Email Communication History</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {communications.length > 0 ? (
+              <div className="space-y-6">
+                {communications.map((comm, index) => (
+                  <div key={index} className="border-b border-white/10 pb-6 last:border-0 last:pb-0">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-bold text-lg">{comm.subject_text}</h3>
+                        <p className="text-sm text-white/70">
+                          From: {comm.salesperson_email} • 
+                          Sent on {format(new Date(comm.date_of_communication), 'MMMM d, yyyy')}
+                        </p>
+                      </div>
+                      <Button variant="outline" size="sm">
+                        <Download size={16} className="mr-2" /> Export
+                      </Button>
+                    </div>
+                    <div className="mt-3 bg-white/5 p-4 rounded-md">
+                      <p className="text-white/80">{comm.body_text?.substring(0, 150)}...</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-10">
+                <p className="text-white/70">No email communications found for this client.</p>
+                <Button className="mt-4">Send First Email</Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

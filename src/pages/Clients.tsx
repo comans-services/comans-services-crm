@@ -1,25 +1,40 @@
 
 import React, { useState } from 'react';
-import { Search, Plus, Edit, MoreVertical } from 'lucide-react';
-import { Link } from 'react-router-dom';
-
-// Sample client data
-const SAMPLE_CLIENTS = [
-  { id: 1, name: 'John Smith', company: 'Acme Corp', email: 'john@acmecorp.com', phone: '(123) 456-7890' },
-  { id: 2, name: 'Lisa Johnson', company: 'Wayne Industries', email: 'lisa@wayneindustries.com', phone: '(234) 567-8901' },
-  { id: 3, name: 'Michael Brown', company: 'Stark Enterprises', email: 'michael@starkent.com', phone: '(345) 678-9012' },
-  { id: 4, name: 'Emily Davis', company: 'ABC Holdings', email: 'emily@abcholdings.com', phone: '(456) 789-0123' },
-  { id: 5, name: 'David Wilson', company: 'XYZ Ltd', email: 'david@xyzltd.com', phone: '(567) 890-1234' },
-];
+import { Search, Plus, Edit, MoreVertical, Users, Building } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { getMockProspects, getProspectsByCompany } from '@/services/mockDataService';
+import { 
+  Tabs, 
+  TabsContent, 
+  TabsList, 
+  TabsTrigger 
+} from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 
 const Clients = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [clients] = useState(SAMPLE_CLIENTS);
+  const [currentTab, setCurrentTab] = useState('all');
+  const navigate = useNavigate();
+
+  // Fetch all clients
+  const { data: clients = [], isLoading: isLoadingClients } = useQuery({
+    queryKey: ['prospects'],
+    queryFn: getMockProspects,
+  });
   
+  // Fetch clients by company
+  const { data: companiesMap = {}, isLoading: isLoadingCompanies } = useQuery({
+    queryKey: ['companies'],
+    queryFn: getProspectsByCompany,
+  });
+
+  // Filter clients based on search term
   const filteredClients = clients.filter(client => 
-    client.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    client.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.email.toLowerCase().includes(searchTerm.toLowerCase())
+    client.first_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    client.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    client.company.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -42,45 +57,131 @@ const Clients = () => {
         </div>
       </div>
       
-      <div className="card">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-white/20">
-                <th className="text-left py-4 px-4 font-medium">Name</th>
-                <th className="text-left py-4 px-4 font-medium">Company</th>
-                <th className="text-left py-4 px-4 font-medium">Email</th>
-                <th className="text-left py-4 px-4 font-medium">Phone</th>
-                <th className="text-right py-4 px-4 font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredClients.map((client) => (
-                <tr key={client.id} className="border-b border-white/10 hover:bg-white/5 transition-colors">
-                  <td className="py-4 px-4">
-                    <Link to={`/clients/${client.id}`} className="font-medium hover:text-crm-accent transition-colors">
-                      {client.name}
-                    </Link>
-                  </td>
-                  <td className="py-4 px-4">{client.company}</td>
-                  <td className="py-4 px-4">{client.email}</td>
-                  <td className="py-4 px-4">{client.phone}</td>
-                  <td className="py-4 px-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      <button className="p-1.5 rounded-full hover:bg-white/10 transition-colors">
-                        <Edit size={16} />
-                      </button>
-                      <button className="p-1.5 rounded-full hover:bg-white/10 transition-colors">
-                        <MoreVertical size={16} />
-                      </button>
+      <Tabs defaultValue="all" onValueChange={setCurrentTab} className="mb-6">
+        <TabsList className="bg-white/10">
+          <TabsTrigger value="all" className="data-[state=active]:bg-crm-accent">
+            <Users size={16} className="mr-2" /> All Clients
+          </TabsTrigger>
+          <TabsTrigger value="company" className="data-[state=active]:bg-crm-accent">
+            <Building size={16} className="mr-2" /> By Company
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="all" className="mt-6">
+          <div className="card">
+            {isLoadingClients ? (
+              <div className="p-8 text-center">Loading clients...</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-white/20">
+                      <th className="text-left py-4 px-4 font-medium">Status</th>
+                      <th className="text-left py-4 px-4 font-medium">Name</th>
+                      <th className="text-left py-4 px-4 font-medium">Company</th>
+                      <th className="text-left py-4 px-4 font-medium">Email</th>
+                      <th className="text-left py-4 px-4 font-medium">Last Contact</th>
+                      <th className="text-left py-4 px-4 font-medium">Action Needed</th>
+                      <th className="text-right py-4 px-4 font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredClients.map((client) => (
+                      <tr key={client.id} className="border-b border-white/10 hover:bg-white/5 transition-colors">
+                        <td className="py-4 px-4">
+                          <div className={`w-3 h-3 rounded-full bg-${client.statusColor}`}></div>
+                        </td>
+                        <td className="py-4 px-4">
+                          <Link to={`/clients/${client.id}`} className="font-medium hover:text-crm-accent transition-colors">
+                            {client.first_name} {client.last_name}
+                          </Link>
+                        </td>
+                        <td className="py-4 px-4">{client.company.charAt(0).toUpperCase() + client.company.slice(1)}</td>
+                        <td className="py-4 px-4">{client.email}</td>
+                        <td className="py-4 px-4">
+                          {client.daysSinceLastContact !== null 
+                            ? `${client.daysSinceLastContact} days ago` 
+                            : 'No contact'}
+                        </td>
+                        <td className="py-4 px-4">{client.recommendedAction}</td>
+                        <td className="py-4 px-4 text-right">
+                          <div className="flex justify-end gap-2">
+                            <button className="p-1.5 rounded-full hover:bg-white/10 transition-colors">
+                              <Edit size={16} />
+                            </button>
+                            <button className="p-1.5 rounded-full hover:bg-white/10 transition-colors">
+                              <MoreVertical size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="company" className="mt-6">
+          {isLoadingCompanies ? (
+            <div className="card p-8 text-center">Loading companies...</div>
+          ) : (
+            <div className="space-y-6">
+              {Object.entries(companiesMap).map(([companyName, companyClients]) => (
+                <div key={companyName} className="card">
+                  <div className="flex items-center mb-4">
+                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mr-3">
+                      <span className="font-bold">{companyName.substring(0, 2).toUpperCase()}</span>
                     </div>
-                  </td>
-                </tr>
+                    <h3 className="text-xl font-bold">{companyName.charAt(0).toUpperCase() + companyName.slice(1)}</h3>
+                    <span className="ml-3 text-white/70 text-sm">
+                      {companyClients.length} client{companyClients.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-white/20">
+                        <th className="text-left py-3 px-4 font-medium">Status</th>
+                        <th className="text-left py-3 px-4 font-medium">Name</th>
+                        <th className="text-left py-3 px-4 font-medium">Email</th>
+                        <th className="text-left py-3 px-4 font-medium">Last Contact</th>
+                        <th className="text-right py-3 px-4 font-medium">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {companyClients.map((client) => (
+                        <tr key={client.id} className="border-b border-white/10 hover:bg-white/5 transition-colors">
+                          <td className="py-3 px-4">
+                            <div className={`w-3 h-3 rounded-full bg-${client.statusColor}`}></div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <Link to={`/clients/${client.id}`} className="font-medium hover:text-crm-accent transition-colors">
+                              {client.first_name} {client.last_name}
+                            </Link>
+                          </td>
+                          <td className="py-3 px-4">{client.email}</td>
+                          <td className="py-3 px-4">
+                            {client.daysSinceLastContact !== null 
+                              ? `${client.daysSinceLastContact} days ago` 
+                              : 'No contact'}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <Button size="sm" onClick={() => navigate(`/clients/${client.id}`)}>
+                              View
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
