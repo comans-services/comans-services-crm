@@ -9,6 +9,38 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      prospect_engagement: {
+        Row: {
+          created_at: string
+          id: string
+          last_contact_date: string | null
+          prospect_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_contact_date?: string | null
+          prospect_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_contact_date?: string | null
+          prospect_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prospect_engagement_prospect_id_fkey"
+            columns: ["prospect_id"]
+            isOneToOne: false
+            referencedRelation: "prospect_profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prospect_profile: {
         Row: {
           created_at: string
