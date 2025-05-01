@@ -11,7 +11,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Table,
@@ -21,6 +20,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Mock team members data
 const mockTeamMembers = [
@@ -50,11 +56,13 @@ const TeamManagement = () => {
   const [teamMembers, setTeamMembers] = useState(mockTeamMembers);
   const [activityLog] = useState(mockActivityLog);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
   const [currentMember, setCurrentMember] = useState<TeamMemberFormData>({
     name: '',
     email: '',
     role: 'Salesperson'
   });
+  const [selectedMemberForRole, setSelectedMemberForRole] = useState<typeof teamMembers[0] | null>(null);
 
   const handleDeleteMember = (id: number) => {
     // Show confirmation toast
@@ -86,6 +94,26 @@ const TeamManagement = () => {
       role: member.role as 'Admin' | 'Salesperson'
     });
     setIsDialogOpen(true);
+  };
+
+  const handleChangeRole = (member: typeof teamMembers[0]) => {
+    setSelectedMemberForRole(member);
+    setIsRoleDialogOpen(true);
+  };
+
+  const handleRoleChange = (newRole: 'Admin' | 'Salesperson') => {
+    if (selectedMemberForRole) {
+      setTeamMembers(teamMembers.map(member => 
+        member.id === selectedMemberForRole.id ? { ...member, role: newRole } : member
+      ));
+      
+      toast({
+        title: "Role updated",
+        description: `${selectedMemberForRole.name}'s role has been updated to ${newRole}.`,
+      });
+      
+      setIsRoleDialogOpen(false);
+    }
   };
 
   const handleAddNewMember = () => {
@@ -146,25 +174,25 @@ const TeamManagement = () => {
       </div>
       
       <div className="grid grid-cols-1 gap-8">
-        <Card>
+        <Card className="bg-black text-white border-white/10">
           <CardHeader>
             <CardTitle>Team Members</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Last Active</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                <TableRow className="border-white/10">
+                  <TableHead className="text-white">Name</TableHead>
+                  <TableHead className="text-white">Email</TableHead>
+                  <TableHead className="text-white">Role</TableHead>
+                  <TableHead className="text-white">Last Active</TableHead>
+                  <TableHead className="text-right text-white">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {teamMembers.map((member) => (
-                  <TableRow key={member.id}>
-                    <TableCell className="font-medium">
+                  <TableRow key={member.id} className="border-white/10">
+                    <TableCell className="font-medium text-white">
                       <div className="flex items-center">
                         <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center mr-2">
                           <User size={14} />
@@ -172,7 +200,7 @@ const TeamManagement = () => {
                         {member.name}
                       </div>
                     </TableCell>
-                    <TableCell>{member.email}</TableCell>
+                    <TableCell className="text-white">{member.email}</TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded-full text-xs ${
                         member.role === 'Admin' ? 'bg-crm-accent/20 text-crm-accent' : 'bg-blue-500/20 text-blue-500'
@@ -180,13 +208,16 @@ const TeamManagement = () => {
                         {member.role}
                       </span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-white">
                       <div className="flex items-center text-white/70">
                         <Clock size={14} className="mr-1" /> {member.lastActive}
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end space-x-2">
+                        <Button variant="outline" size="sm" onClick={() => handleChangeRole(member)}>
+                          Change Role
+                        </Button>
                         <Button variant="outline" size="sm" onClick={() => handleEditMember(member)}>
                           <Edit size={14} />
                         </Button>
@@ -202,7 +233,7 @@ const TeamManagement = () => {
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="bg-black text-white border-white/10">
           <CardHeader>
             <CardTitle>Activity Log</CardTitle>
           </CardHeader>
@@ -228,10 +259,10 @@ const TeamManagement = () => {
       </div>
       
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent className="bg-black text-white border-white/10">
           <DialogHeader>
             <DialogTitle>{currentMember.id ? 'Edit' : 'Add'} Team Member</DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-white/70">
               {currentMember.id 
                 ? 'Update team member information below.' 
                 : 'Fill in the information below to add a new team member.'}
@@ -247,7 +278,7 @@ const TeamManagement = () => {
                   id="name"
                   value={currentMember.name}
                   onChange={(e) => setCurrentMember({...currentMember, name: e.target.value})}
-                  className="px-3 py-2 bg-white/5 border border-white/20 rounded-md focus:outline-none focus:ring-2 focus:ring-crm-accent/50"
+                  className="px-3 py-2 bg-white/5 border border-white/20 rounded-md focus:outline-none focus:ring-2 focus:ring-crm-accent/50 text-white"
                   required
                 />
               </div>
@@ -259,7 +290,7 @@ const TeamManagement = () => {
                   id="email"
                   value={currentMember.email}
                   onChange={(e) => setCurrentMember({...currentMember, email: e.target.value})}
-                  className="px-3 py-2 bg-white/5 border border-white/20 rounded-md focus:outline-none focus:ring-2 focus:ring-crm-accent/50"
+                  className="px-3 py-2 bg-white/5 border border-white/20 rounded-md focus:outline-none focus:ring-2 focus:ring-crm-accent/50 text-white"
                   required
                 />
               </div>
@@ -270,7 +301,7 @@ const TeamManagement = () => {
                   id="role"
                   value={currentMember.role}
                   onChange={(e) => setCurrentMember({...currentMember, role: e.target.value as 'Admin' | 'Salesperson'})}
-                  className="px-3 py-2 bg-white/5 border border-white/20 rounded-md focus:outline-none focus:ring-2 focus:ring-crm-accent/50"
+                  className="px-3 py-2 bg-white/5 border border-white/20 rounded-md focus:outline-none focus:ring-2 focus:ring-crm-accent/50 text-white"
                 >
                   <option value="Admin">Admin</option>
                   <option value="Salesperson">Salesperson</option>
@@ -285,6 +316,42 @@ const TeamManagement = () => {
               <Button type="submit">{currentMember.id ? 'Update' : 'Add'}</Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+      
+      <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
+        <DialogContent className="bg-black text-white border-white/10">
+          <DialogHeader>
+            <DialogTitle>Change Role</DialogTitle>
+            <DialogDescription className="text-white/70">
+              {selectedMemberForRole && `Update ${selectedMemberForRole.name}'s role below.`}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="flex justify-center space-x-4">
+              <Button 
+                variant={selectedMemberForRole?.role === 'Admin' ? 'default' : 'outline'}
+                onClick={() => handleRoleChange('Admin')}
+                className={selectedMemberForRole?.role === 'Admin' ? 'bg-crm-accent' : ''}
+              >
+                Admin
+              </Button>
+              <Button 
+                variant={selectedMemberForRole?.role === 'Salesperson' ? 'default' : 'outline'}
+                onClick={() => handleRoleChange('Salesperson')}
+                className={selectedMemberForRole?.role === 'Salesperson' ? 'bg-blue-500' : ''}
+              >
+                Salesperson
+              </Button>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setIsRoleDialogOpen(false)}>
+              Cancel
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
