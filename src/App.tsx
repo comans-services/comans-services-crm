@@ -18,6 +18,7 @@ import KanbanBoard from "./pages/KanbanBoard";
 import AuthGuard from "./components/auth/AuthGuard";
 import TeamManagement from "./pages/TeamManagement";
 import CommunicationHistory from "./pages/CommunicationHistory";
+import TodaysTasks from "./pages/TodaysTasks";
 
 const queryClient = new QueryClient();
 
@@ -87,6 +88,14 @@ const App = () => (
           <AuthGuard>
             <Layout>
               <CommunicationHistory />
+            </Layout>
+          </AuthGuard>
+        } />
+        
+        <Route path="/todaystasks" element={
+          <AuthGuard>
+            <Layout>
+              <TodaysTasks />
             </Layout>
           </AuthGuard>
         } />

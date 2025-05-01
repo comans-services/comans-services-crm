@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Mail, Settings, UsersRound, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, Users, Mail, Settings, UsersRound, MessageSquare, Calendar } from 'lucide-react';
 
 interface SidebarProps {
   isExpanded: boolean;
@@ -34,7 +35,8 @@ const Sidebar = ({ isExpanded, onToggle }: SidebarProps) => {
   const links = [
     { to: "/", label: "Dashboard", icon: <LayoutDashboard /> },
     { to: "/clients", label: "Clients", icon: <Users /> },
-    { to: "/communications", label: "Communication History", icon: <MessageSquare /> },
+    { to: "/todaystasks", label: "Today's Tasks", icon: <Calendar /> },
+    { to: "/communications", label: "Status of Prospects", icon: <MessageSquare /> },
     { to: "/newsletters", label: "Newsletters", icon: <Mail /> },
     { to: "/team", label: "Team", icon: <UsersRound /> },
     { to: "/settings", label: "Settings", icon: <Settings /> },

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Users, Mail, Calendar, TrendingUp, Bell, ArrowRight, CheckCircle } from 'lucide-react';
 import { getMockProspects, ProspectWithEngagement } from '../services/mockDataService';
@@ -152,7 +151,7 @@ const Dashboard = () => {
         <div className="card bg-black/80 backdrop-blur-md border border-white/20 lg:col-span-2">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold">Today's Communication Tasks</h2>
-            <Button variant="outline" size="sm" className="bg-crm-accent text-white hover:bg-crm-accent/90" onClick={() => navigate('/communications')}>
+            <Button variant="outline" size="sm" className="bg-crm-accent text-white hover:bg-crm-accent/90" onClick={() => navigate('/todaystasks')}>
               View All <ArrowRight className="ml-2" size={16} />
             </Button>
           </div>
@@ -216,13 +215,13 @@ const Dashboard = () => {
           </div>
           
           <div className="mt-4 flex justify-center">
-            <Button variant="outline" onClick={() => navigate('/communications')} className="text-white border-white/20">
-              View all communications
+            <Button variant="outline" onClick={() => navigate('/todaystasks')} className="text-white border-white/20">
+              View all communication tasks
             </Button>
           </div>
         </div>
         
-        <div className="card">
+        <div className="card bg-black/80 backdrop-blur-md border border-white/20">
           <h2 className="text-xl font-bold mb-4">Companies</h2>
           <div className="space-y-4">
             {Array.from(new Set(prospects.map(p => p.company))).slice(0, 5).map((company, i) => {
@@ -246,10 +245,10 @@ const Dashboard = () => {
       </div>
       
       <div className="mt-8">
-        <Card>
+        <Card className="bg-black/80 backdrop-blur-md border border-white/20 text-white">
           <CardHeader>
-            <CardTitle>Recent Communications</CardTitle>
-            <CardDescription>Latest emails sent to prospects</CardDescription>
+            <CardTitle className="text-white">Recent Communications</CardTitle>
+            <CardDescription className="text-white/70">Latest emails sent to prospects</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -272,7 +271,7 @@ const Dashboard = () => {
             </div>
           </CardContent>
           <CardFooter>
-            <Button variant="outline" className="w-full" onClick={() => navigate('/communications')}>
+            <Button variant="outline" className="w-full text-white border-white/20" onClick={() => navigate('/communications')}>
               View All Communications
             </Button>
           </CardFooter>
