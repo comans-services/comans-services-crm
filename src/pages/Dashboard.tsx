@@ -151,7 +151,7 @@ const Dashboard = () => {
         <div className="card bg-black/80 backdrop-blur-md border border-white/20 lg:col-span-2">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold">Today's Communication Tasks</h2>
-            <Button variant="outline" size="sm" className="bg-crm-accent text-white hover:bg-crm-accent/90" onClick={() => navigate('/todaystasks')}>
+            <Button variant="outline" size="sm" className="bg-red-600 text-white hover:bg-red-700 border-red-600" onClick={() => navigate('/todaystasks')}>
               View All <ArrowRight className="ml-2" size={16} />
             </Button>
           </div>
@@ -215,7 +215,7 @@ const Dashboard = () => {
           </div>
           
           <div className="mt-4 flex justify-center">
-            <Button variant="outline" onClick={() => navigate('/todaystasks')} className="text-white border-white/20">
+            <Button variant="outline" onClick={() => navigate('/todaystasks')} className="bg-red-600 text-white hover:bg-red-700 border-red-600">
               View all communication tasks
             </Button>
           </div>
@@ -271,7 +271,7 @@ const Dashboard = () => {
             </div>
           </CardContent>
           <CardFooter>
-            <Button variant="outline" className="w-full text-white border-white/20" onClick={() => navigate('/communications')}>
+            <Button variant="outline" className="w-full bg-red-600 text-white hover:bg-red-700 border-red-600" onClick={() => navigate('/communications')}>
               View All Communications
             </Button>
           </CardFooter>
