@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Users, Mail, Calendar, TrendingUp, Bell, ArrowRight } from 'lucide-react';
+import { Users, Mail, Calendar, TrendingUp, Bell, ArrowRight, CheckCircle } from 'lucide-react';
 import { getMockProspects, ProspectWithEngagement } from '../services/mockDataService';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
@@ -22,6 +22,21 @@ const StatCard = ({ title, value, icon, color }: { title: string; value: string 
     </div>
   </div>
 );
+
+const PriorityIndicator = ({ priority }: { priority: 'high' | 'medium' | 'low' }) => {
+  const colors = {
+    high: 'bg-red-500',
+    medium: 'bg-yellow-500',
+    low: 'bg-green-500',
+  };
+  
+  return (
+    <div className="flex items-center gap-2">
+      <div className={`w-3 h-3 rounded-full ${colors[priority]}`}></div>
+      <span className="text-xs text-white/70 capitalize">{priority}</span>
+    </div>
+  );
+};
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -53,6 +68,51 @@ const Dashboard = () => {
   const urgentFollowups = prospects.filter(p => p.daysSinceLastContact !== null && p.daysSinceLastContact > 10).length;
   const todayFollowups = prospects.filter(p => p.daysSinceLastContact !== null && p.daysSinceLastContact > 5 && p.daysSinceLastContact <= 10).length;
   const thisWeekFollowups = prospects.filter(p => p.daysSinceLastContact !== null && p.daysSinceLastContact > 2 && p.daysSinceLastContact <= 5).length;
+
+  // Generate prioritized to-do list for today
+  const generatePrioritizedTasks = (prospects: ProspectWithEngagement[]) => {
+    const tasks = [];
+    
+    // Add urgent follow-ups as high priority
+    const urgentProspects = prospects.filter(p => p.daysSinceLastContact !== null && p.daysSinceLastContact > 10);
+    for (const prospect of urgentProspects) {
+      tasks.push({
+        id: `task-urgent-${prospect.id}`,
+        type: 'follow-up',
+        prospect,
+        priority: 'high' as const,
+        description: `Contact ${prospect.first_name} ${prospect.last_name} (${prospect.daysSinceLastContact} days since last contact)`
+      });
+    }
+    
+    // Add today's follow-ups as medium priority
+    const todayProspects = prospects.filter(p => p.daysSinceLastContact !== null && p.daysSinceLastContact > 5 && p.daysSinceLastContact <= 10);
+    for (const prospect of todayProspects) {
+      tasks.push({
+        id: `task-today-${prospect.id}`,
+        type: 'follow-up',
+        prospect,
+        priority: 'medium' as const,
+        description: `Follow up with ${prospect.first_name} ${prospect.last_name} from ${prospect.company}`
+      });
+    }
+    
+    // Add weekly follow-ups as low priority
+    const weeklyProspects = prospects.filter(p => p.daysSinceLastContact !== null && p.daysSinceLastContact > 2 && p.daysSinceLastContact <= 5);
+    for (const prospect of weeklyProspects.slice(0, 3)) { // Limit to 3 weekly tasks for now
+      tasks.push({
+        id: `task-weekly-${prospect.id}`,
+        type: 'check-in',
+        prospect,
+        priority: 'low' as const,
+        description: `Schedule check-in with ${prospect.first_name} ${prospect.last_name}`
+      });
+    }
+    
+    return tasks;
+  };
+  
+  const prioritizedTasks = generatePrioritizedTasks(prospects);
 
   return (
     <div>
@@ -89,54 +149,77 @@ const Dashboard = () => {
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="card lg:col-span-2">
+        <div className="card bg-black/80 backdrop-blur-md border border-white/20 lg:col-span-2">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold">Communication Frequency</h2>
+            <h2 className="text-xl font-bold">Today's Communication Tasks</h2>
             <Button variant="outline" size="sm" className="bg-crm-accent text-white hover:bg-crm-accent/90" onClick={() => navigate('/communications')}>
               View All <ArrowRight className="ml-2" size={16} />
             </Button>
           </div>
           
           <div className="space-y-4">
-            {prospects.slice(0, 5).map((prospect) => (
-              <div 
-                key={prospect.id} 
-                className="flex items-center justify-between border-b border-white/10 pb-4 hover:bg-white/5 p-2 rounded-md transition-colors cursor-pointer"
-                onClick={() => navigate(`/clients/${prospect.id}`)}
-              >
-                <div className="flex items-start">
-                  <div className={`w-10 h-10 rounded-full bg-${prospect.statusColor}/20 text-${prospect.statusColor} flex items-center justify-center mr-4`}>
-                    <div className={`w-5 h-5 rounded-full bg-${prospect.statusColor}`}></div>
+            {prioritizedTasks.length > 0 ? (
+              prioritizedTasks.map((task) => (
+                <div 
+                  key={task.id} 
+                  className={`flex items-center justify-between py-3 px-4 rounded-md transition-colors cursor-pointer border-l-4 ${
+                    task.priority === 'high' ? 'border-l-red-500 bg-black/40' : 
+                    task.priority === 'medium' ? 'border-l-yellow-500 bg-black/30' : 
+                    'border-l-green-500 bg-black/20'
+                  }`}
+                  onClick={() => navigate(`/clients/${task.prospect.id}`)}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="min-w-[24px]">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-6 w-6 rounded-full hover:bg-white/20"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toast({
+                            title: "Task completed",
+                            description: `Marked "${task.description}" as done`,
+                          });
+                        }}
+                      >
+                        <div className="h-5 w-5 rounded-full border border-white/40"></div>
+                      </Button>
+                    </div>
+                    <div>
+                      <p className="font-medium mb-1">{task.description}</p>
+                      <div className="flex items-center gap-4">
+                        <PriorityIndicator priority={task.priority} />
+                        {task.type === 'follow-up' && (
+                          <span className="text-xs bg-white/10 px-2 py-1 rounded">Follow-up</span>
+                        )}
+                        {task.type === 'check-in' && (
+                          <span className="text-xs bg-white/10 px-2 py-1 rounded">Check-in</span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium">
-                      {prospect.first_name} {prospect.last_name}
-                    </p>
-                    <p className="text-sm text-white/70">
-                      {prospect.company.charAt(0).toUpperCase() + prospect.company.slice(1)}
+                  
+                  <div className="text-right">
+                    <p className="text-sm text-white/70">{task.prospect.company}</p>
+                    <p className="text-xs text-white/50">
+                      {task.prospect.daysSinceLastContact} days ago
                     </p>
                   </div>
                 </div>
-                
-                <div className="text-right">
-                  <p className="font-medium">
-                    {prospect.daysSinceLastContact !== null
-                      ? `${prospect.daysSinceLastContact} days ago`
-                      : 'No contact'}
-                  </p>
-                  <p className="text-sm text-white/70">{prospect.recommendedAction}</p>
-                </div>
+              ))
+            ) : (
+              <div className="text-center py-6 text-white/60">
+                No communication tasks for today
               </div>
-            ))}
+            )}
           </div>
           
-          {prospects.length > 5 && (
-            <div className="mt-4 text-center">
-              <Button variant="link" onClick={() => navigate('/communications')} className="text-white">
-                View all {prospects.length} clients
-              </Button>
-            </div>
-          )}
+          <div className="mt-4 flex justify-center">
+            <Button variant="outline" onClick={() => navigate('/communications')} className="text-white border-white/20">
+              View all communications
+            </Button>
+          </div>
         </div>
         
         <div className="card">
