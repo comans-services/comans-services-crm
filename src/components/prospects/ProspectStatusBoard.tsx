@@ -5,10 +5,13 @@ import { ProspectWithEngagement } from '@/services/mockDataService';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import { getRecommendedAction } from '@/utils/clientUtils';
+import { Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface ProspectStatusBoardProps {
   prospects: ProspectWithEngagement[];
   isLoading: boolean;
+  onCreateLead: () => void;
 }
 
 type StatusColumn = {
@@ -17,7 +20,7 @@ type StatusColumn = {
   prospects: ProspectWithEngagement[];
 }
 
-const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, isLoading }) => {
+const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, isLoading, onCreateLead }) => {
   // Define status columns
   const initialColumns: StatusColumn[] = [
     {
@@ -151,6 +154,16 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
                       {column.prospects.length}
                     </span>
                   </div>
+                  {column.id === 'new-lead' && (
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      className="p-1 rounded hover:bg-white/10"
+                      onClick={onCreateLead}
+                    >
+                      <Plus size={16} />
+                    </Button>
+                  )}
                 </div>
                 
                 <Droppable droppableId={column.id}>
@@ -202,11 +215,23 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
                       ))}
                       {provided.placeholder}
                       
-                      {column.prospects.length === 0 && (
+                      {column.prospects.length === 0 && column.id !== 'new-lead' && (
                         <div className="flex items-center justify-center h-16 border border-dashed border-white/10 rounded-md">
                           <span className="text-xs text-white/50">
                             Drop prospect here
                           </span>
+                        </div>
+                      )}
+                      
+                      {column.prospects.length === 0 && column.id === 'new-lead' && (
+                        <div className="flex items-center justify-center h-16 border border-dashed border-white/10 rounded-md">
+                          <button 
+                            className="text-xs text-white/50 hover:text-white/80 flex items-center"
+                            onClick={onCreateLead}
+                          >
+                            <Plus size={14} className="mr-1" />
+                            Create New Lead
+                          </button>
                         </div>
                       )}
                     </div>

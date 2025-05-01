@@ -5,9 +5,6 @@ import { getMockProspects } from '@/services/mockDataService';
 import ProspectStatusBoard from '@/components/prospects/ProspectStatusBoard';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Plus, User } from 'lucide-react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
 
 const CommunicationHistory = () => {
   const { data: prospects = [], isLoading, refetch } = useQuery({
@@ -38,45 +35,18 @@ const CommunicationHistory = () => {
     refetch();
   };
 
-  // Get user info from localStorage (in a real app, use a proper auth context)
-  const userEmail = (() => {
-    const user = localStorage.getItem('user');
-    return user ? JSON.parse(user).email : 'user@example.com';
-  })();
-
   return (
     <div className="flex flex-col h-full">
-      {/* Fixed Navigation Bar */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-black/80 py-2 px-4 flex items-center justify-between">
-        <div className="flex-1"></div> {/* Spacer */}
-        
-        <div className="flex items-center gap-4">
-          <Button
-            onClick={() => setIsNewLeadDialogOpen(true)}
-            className="bg-black/30 hover:bg-black/50 text-white rounded-md flex items-center gap-2"
-          >
-            <Plus size={16} />
-            Create New Lead
-          </Button>
-          
-          <div className="flex items-center gap-2 bg-black/30 hover:bg-black/50 px-3 py-2 rounded-full">
-            <Avatar className="w-7 h-7 bg-crm-accent">
-              <AvatarFallback>
-                <User size={16} />
-              </AvatarFallback>
-            </Avatar>
-            <span className="text-sm font-medium">{userEmail}</span>
-          </div>
-        </div>
-      </div>
-      
-      {/* Main content, with padding to account for the fixed navbar */}
-      <div className="pt-20 pb-4">
+      <div className="pb-4">
         <h1 className="text-3xl font-bold mb-8">Communication History</h1>
         
         <div className="mb-6">
           <h2 className="text-xl font-semibold mb-4">Prospect Status Board</h2>
-          <ProspectStatusBoard prospects={prospects} isLoading={isLoading} />
+          <ProspectStatusBoard 
+            prospects={prospects} 
+            isLoading={isLoading} 
+            onCreateLead={() => setIsNewLeadDialogOpen(true)} 
+          />
         </div>
       </div>
 
