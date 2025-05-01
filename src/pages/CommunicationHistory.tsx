@@ -4,6 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { getMockProspects } from '@/services/mockDataService';
 import ProspectStatusBoard from '@/components/prospects/ProspectStatusBoard';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 const CommunicationHistory = () => {
@@ -51,84 +53,85 @@ const CommunicationHistory = () => {
       </div>
 
       <Dialog open={isNewLeadDialogOpen} onOpenChange={setIsNewLeadDialogOpen}>
-        <DialogContent>
+        <DialogContent className="bg-black/80 backdrop-blur-md border border-white/20 text-white">
           <DialogHeader>
-            <DialogTitle>Create New Lead</DialogTitle>
+            <DialogTitle className="text-white">Create New Lead</DialogTitle>
           </DialogHeader>
           
           <form onSubmit={handleCreateLead}>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="firstName" className="text-sm font-medium mb-2 block">
+                  <label htmlFor="firstName" className="text-sm font-medium mb-2 block text-white">
                     First Name
                   </label>
-                  <input
+                  <Input
                     id="firstName"
                     name="firstName"
                     value={newLead.firstName}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-md text-white focus:outline-none focus:ring-2"
+                    className="bg-white/10 border-white/20 text-white focus:ring-white/30"
                     required
                   />
                 </div>
                 <div>
-                  <label htmlFor="lastName" className="text-sm font-medium mb-2 block">
+                  <label htmlFor="lastName" className="text-sm font-medium mb-2 block text-white">
                     Last Name
                   </label>
-                  <input
+                  <Input
                     id="lastName"
                     name="lastName"
                     value={newLead.lastName}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-md text-white focus:outline-none focus:ring-2"
+                    className="bg-white/10 border-white/20 text-white focus:ring-white/30"
                     required
                   />
                 </div>
               </div>
               <div>
-                <label htmlFor="email" className="text-sm font-medium mb-2 block">
+                <label htmlFor="email" className="text-sm font-medium mb-2 block text-white">
                   Email
                 </label>
-                <input
+                <Input
                   id="email"
                   name="email"
                   type="email"
                   value={newLead.email}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-md text-white focus:outline-none focus:ring-2"
+                  className="bg-white/10 border-white/20 text-white focus:ring-white/30"
                   required
                 />
               </div>
               <div>
-                <label htmlFor="company" className="text-sm font-medium mb-2 block">
+                <label htmlFor="company" className="text-sm font-medium mb-2 block text-white">
                   Company
                 </label>
-                <input
+                <Input
                   id="company"
                   name="company"
                   value={newLead.company}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-md text-white focus:outline-none focus:ring-2"
+                  className="bg-white/10 border-white/20 text-white focus:ring-white/30"
                   required
                 />
               </div>
             </div>
             
             <DialogFooter>
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={() => setIsNewLeadDialogOpen(false)}
-                className="px-4 py-2 border border-white/20 rounded-md hover:bg-white/10 transition-colors"
+                className="border-white/20 text-white hover:bg-white/10 hover:text-white"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                className="bg-crm-accent hover:bg-crm-accent/90 text-white"
               >
                 Create Lead
-              </button>
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
