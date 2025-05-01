@@ -170,24 +170,31 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
                             <div
                               ref={provided.innerRef}
                               {...provided.draggableProps}
-                              {...provided.dragHandleProps}
+                              style={{
+                                ...provided.draggableProps.style,
+                                // This ensures the card can be lifted up on drag
+                                zIndex: snapshot.isDragging ? 9999 : 'auto'
+                              }}
                               className={`mb-2 p-3 rounded-md bg-white/5 hover:bg-white/10 border border-white/10 transition-all ${
                                 snapshot.isDragging ? 'shadow-lg shadow-black/40' : ''
                               }`}
                             >
-                              <div className="text-sm font-medium">
-                                {prospect.first_name} {prospect.last_name}
-                              </div>
-                              <div className="text-xs text-white/60 mt-1">
-                                {prospect.company}
-                              </div>
-                              <div className="mt-2 flex justify-between items-center text-xs">
-                                <div className="bg-white/10 rounded px-2 py-0.5">
-                                  {prospect.daysSinceLastContact !== null 
-                                    ? `${prospect.daysSinceLastContact} days ago` 
-                                    : 'New lead'}
+                              {/* Added dragHandleProps to the entire card instead of just one element */}
+                              <div {...provided.dragHandleProps} className="cursor-move">
+                                <div className="text-sm font-medium">
+                                  {prospect.first_name} {prospect.last_name}
                                 </div>
-                                <div className={`w-2 h-2 rounded-full bg-${prospect.statusColor}`}></div>
+                                <div className="text-xs text-white/60 mt-1">
+                                  {prospect.company}
+                                </div>
+                                <div className="mt-2 flex justify-between items-center text-xs">
+                                  <div className="bg-white/10 rounded px-2 py-0.5">
+                                    {prospect.daysSinceLastContact !== null 
+                                      ? `${prospect.daysSinceLastContact} days ago` 
+                                      : 'New lead'}
+                                  </div>
+                                  <div className={`w-2 h-2 rounded-full bg-${prospect.statusColor}`}></div>
+                                </div>
                               </div>
                             </div>
                           )}
