@@ -269,10 +269,10 @@ const TeamManagement = () => {
                   id="role"
                   value={currentMember.role}
                   onChange={(e) => setCurrentMember({...currentMember, role: e.target.value as 'Admin' | 'Salesperson'})}
-                  className="px-3 py-2 bg-white/5 border border-white/20 rounded-md focus:outline-none focus:ring-2 focus:ring-crm-accent/50 text-white"
+                  className="px-3 py-2 bg-[#0f133e] border border-white/20 rounded-md focus:outline-none focus:ring-2 focus:ring-crm-accent/50 text-white"
                 >
-                  <option value="Admin">Admin</option>
-                  <option value="Salesperson">Salesperson</option>
+                  <option value="Admin" className="bg-[#0f133e] text-white">Admin</option>
+                  <option value="Salesperson" className="bg-[#0f133e] text-white">Salesperson</option>
                 </select>
               </div>
             </div>
