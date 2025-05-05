@@ -130,15 +130,27 @@ const KanbanBoard = () => {
     setColumns(newColumns);
   };
   
-  // Function to get draggable styles for enhanced visual feedback
+  // Enhanced function to get draggable styles for improved visual feedback
   const getItemStyle = (isDragging: boolean, draggableStyle: any) => ({
     // basic styles to make the items look nice
     userSelect: 'none' as const,
     margin: '0 0 8px 0',
     
-    // change background colour if dragging
-    background: isDragging ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.05)',
-    boxShadow: isDragging ? '0 5px 10px rgba(0, 0, 0, 0.3)' : 'none',
+    // Enhanced drag effect - more prominent visual cue during dragging
+    background: isDragging ? 'rgba(59, 130, 246, 0.6)' : 'rgba(255, 255, 255, 0.05)',
+    borderColor: isDragging ? 'rgb(59, 130, 246)' : 'rgba(255, 255, 255, 0.1)',
+    
+    // Enhanced shadow effect for lifting
+    boxShadow: isDragging 
+      ? '0 10px 15px rgba(0, 0, 0, 0.4), 0 0 0 2px rgb(59, 130, 246)' 
+      : 'none',
+    
+    // Scale up slightly when dragging to enhance visibility
+    transform: isDragging ? 'scale(1.02)' : 'none',
+    zIndex: isDragging ? 9999 : 1,
+    
+    // Enhanced transition for smooth animation
+    transition: 'background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease',
     
     // styles we need to apply on draggables
     ...draggableStyle,
@@ -178,7 +190,11 @@ const KanbanBoard = () => {
                       <div
                         {...provided.droppableProps}
                         ref={provided.innerRef}
-                        className={`flex-1 overflow-y-auto p-2 transition-colors duration-200 ${snapshot.isDraggingOver ? 'bg-white/10' : ''}`}
+                        className={`flex-1 overflow-y-auto p-2 transition-colors duration-200 ${
+                          snapshot.isDraggingOver 
+                            ? 'bg-white/10 border border-blue-400/50' 
+                            : ''
+                        }`}
                       >
                         {column.cards.map((card, index) => (
                           <Draggable key={card.id} draggableId={card.id} index={index}>
@@ -193,13 +209,15 @@ const KanbanBoard = () => {
                                 )}
                                 className={`mb-2 p-3 rounded-md border border-white/10 transition-all`}
                               >
-                                <div className="text-sm font-medium">{card.name}</div>
-                                <div className="text-xs text-white/60 mt-1">{card.company}</div>
-                                <div className="flex items-center justify-between mt-2">
-                                  <div className="bg-white/10 text-xs rounded px-2 py-0.5">
-                                    {card.clientId}
+                                <div className={`${snapshot.isDragging ? 'pointer-events-none' : ''}`}>
+                                  <div className="text-sm font-medium">{card.name}</div>
+                                  <div className="text-xs text-white/60 mt-1">{card.company}</div>
+                                  <div className="flex items-center justify-between mt-2">
+                                    <div className="bg-white/10 text-xs rounded px-2 py-0.5">
+                                      {card.clientId}
+                                    </div>
+                                    <div className="text-white/40 text-xs">{card.industry}</div>
                                   </div>
-                                  <div className="text-white/40 text-xs">{card.industry}</div>
                                 </div>
                               </div>
                             )}
@@ -208,7 +226,9 @@ const KanbanBoard = () => {
                         {provided.placeholder}
                         
                         {column.cards.length === 0 && (
-                          <div className="flex items-center justify-center h-16 border border-dashed border-white/10 rounded-md">
+                          <div className={`flex items-center justify-center h-16 border border-dashed ${
+                            snapshot.isDraggingOver ? 'border-blue-400/50 bg-blue-400/10' : 'border-white/10'
+                          } rounded-md transition-colors duration-200`}>
                             <button className="text-xs text-white/50 hover:text-white/80 flex items-center">
                               <Plus size={14} className="mr-1" />
                               Create
