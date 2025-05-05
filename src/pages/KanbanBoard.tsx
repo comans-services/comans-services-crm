@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { Plus, MoreHorizontal } from 'lucide-react';
@@ -141,38 +140,32 @@ const KanbanBoard = () => {
     setColumns(newColumns);
   };
   
-  // Enhanced function to get draggable styles for improved visual feedback
+  // Improved function to get draggable styles to ensure cursor alignment
   const getItemStyle = (isDragging: boolean, draggableStyle: any) => ({
-    // Always maintain visibility during drag
-    opacity: 1,
-    visibility: 'visible',
-    pointerEvents: 'auto',
-    
-    // basic styles to make the items look nice
+    // Keep item visible during drag
     userSelect: 'none' as const,
+    opacity: 1,
     margin: '0 0 8px 0',
     
-    // Enhanced drag effect - more prominent visual cue during dragging
+    // Visual feedback when dragging
     background: isDragging ? 'rgba(59, 130, 246, 0.6)' : 'rgba(255, 255, 255, 0.05)',
     borderColor: isDragging ? 'rgb(59, 130, 246)' : 'rgba(255, 255, 255, 0.1)',
+    boxShadow: isDragging ? '0 10px 15px rgba(0, 0, 0, 0.4)' : 'none',
     
-    // Enhanced shadow effect for lifting
-    boxShadow: isDragging 
-      ? '0 10px 15px rgba(0, 0, 0, 0.4), 0 0 0 2px rgb(59, 130, 246)' 
-      : 'none',
+    // Don't apply any transforms that could offset the cursor position
+    transform: 'translate(0, 0)',
     
-    // Scale up slightly when dragging to enhance visibility
-    transform: isDragging ? 'scale(1.02)' : 'none',
-    zIndex: isDragging ? 9999 : 1,
+    // Apply the draggable styles but ensure we don't create offset issues
+    ...draggableStyle,
     
-    // Enhanced transition for smooth animation - no transitions during drag
-    transition: isDragging ? 'none' : 'background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease',
-    
-    // Improve cursor positioning - stick to the cursor position and don't apply additional transforms
-    ...(isDragging ? { transformOrigin: '50% 50%' } : {}),
-    
-    // Apply draggable styles without overriding our positioning enhancements
-    ...(draggableStyle || {}),
+    // Critical fix: Ensure the transform includes only what DnD needs for positioning
+    // and remove any scaling or other transforms that might cause misalignment
+    ...(isDragging && draggableStyle && draggableStyle.transform
+      ? {
+          transform: draggableStyle.transform.replace(/scale\([^)]+\)/g, ''),
+          transformOrigin: 'top left'
+        }
+      : {})
   });
   
   return (
