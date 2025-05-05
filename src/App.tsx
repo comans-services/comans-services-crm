@@ -19,6 +19,7 @@ import AuthGuard from "./components/auth/AuthGuard";
 import TeamManagement from "./pages/TeamManagement";
 import CommunicationHistory from "./pages/CommunicationHistory";
 import TodaysTasks from "./pages/TodaysTasks";
+import EmailCommunicationHistory from "./pages/EmailCommunicationHistory";
 
 const queryClient = new QueryClient();
 
@@ -88,6 +89,14 @@ const App = () => (
           <AuthGuard>
             <Layout>
               <CommunicationHistory />
+            </Layout>
+          </AuthGuard>
+        } />
+        
+        <Route path="/email-communications" element={
+          <AuthGuard>
+            <Layout>
+              <EmailCommunicationHistory />
             </Layout>
           </AuthGuard>
         } />

@@ -106,9 +106,9 @@ const Clients = () => {
             variant="outline" 
             size="sm" 
             className="w-full border-white/20 text-white hover:bg-white/10"
-            onClick={() => navigate('/communications')}
+            onClick={() => navigate('/email-communications')}
           >
-            View All Communications
+            View All Email Communications
           </Button>
         </div>
       </div>
