@@ -130,6 +130,20 @@ const KanbanBoard = () => {
     setColumns(newColumns);
   };
   
+  // Function to get draggable styles for enhanced visual feedback
+  const getItemStyle = (isDragging: boolean, draggableStyle: any) => ({
+    // basic styles to make the items look nice
+    userSelect: 'none' as const,
+    margin: '0 0 8px 0',
+    
+    // change background colour if dragging
+    background: isDragging ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+    boxShadow: isDragging ? '0 5px 10px rgba(0, 0, 0, 0.3)' : 'none',
+    
+    // styles we need to apply on draggables
+    ...draggableStyle,
+  });
+  
   return (
     <div className="py-4">
       <div className="flex justify-between items-center mb-8">
@@ -164,7 +178,7 @@ const KanbanBoard = () => {
                       <div
                         {...provided.droppableProps}
                         ref={provided.innerRef}
-                        className={`flex-1 overflow-y-auto p-2 ${snapshot.isDraggingOver ? 'bg-white/5' : ''}`}
+                        className={`flex-1 overflow-y-auto p-2 transition-colors duration-200 ${snapshot.isDraggingOver ? 'bg-white/10' : ''}`}
                       >
                         {column.cards.map((card, index) => (
                           <Draggable key={card.id} draggableId={card.id} index={index}>
@@ -173,9 +187,11 @@ const KanbanBoard = () => {
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
-                                className={`mb-2 p-3 rounded-md bg-white/5 hover:bg-white/10 border border-white/10 transition-all ${
-                                  snapshot.isDragging ? 'shadow-lg shadow-black/40' : ''
-                                }`}
+                                style={getItemStyle(
+                                  snapshot.isDragging,
+                                  provided.draggableProps.style
+                                )}
+                                className={`mb-2 p-3 rounded-md border border-white/10 transition-all`}
                               >
                                 <div className="text-sm font-medium">{card.name}</div>
                                 <div className="text-xs text-white/60 mt-1">{card.company}</div>

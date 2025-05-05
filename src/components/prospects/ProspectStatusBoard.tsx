@@ -140,6 +140,20 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
     return <div className="card p-8 text-center">Loading prospects...</div>;
   }
   
+  // Function to get draggable styles for enhanced visual feedback
+  const getItemStyle = (isDragging: boolean, draggableStyle: any) => ({
+    // basic styles to make the items look nice
+    userSelect: 'none',
+    margin: '0 0 8px 0',
+    
+    // change background colour if dragging
+    background: isDragging ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+    boxShadow: isDragging ? '0 5px 10px rgba(0, 0, 0, 0.3)' : 'none',
+    
+    // styles we need to apply on draggables
+    ...draggableStyle,
+  });
+  
   return (
     <div className="overflow-x-auto pb-4">
       <DragDropContext onDragEnd={handleDragEnd}>
@@ -171,7 +185,7 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
                     <div
                       ref={provided.innerRef}
                       {...provided.droppableProps}
-                      className={`flex-1 overflow-y-auto p-2 ${snapshot.isDraggingOver ? 'bg-white/5' : ''}`}
+                      className={`flex-1 overflow-y-auto p-2 transition-colors duration-200 ${snapshot.isDraggingOver ? 'bg-white/10' : ''}`}
                     >
                       {column.prospects.map((prospect, index) => (
                         <Draggable 
@@ -183,17 +197,14 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
                             <div
                               ref={provided.innerRef}
                               {...provided.draggableProps}
-                              style={{
-                                ...provided.draggableProps.style,
-                                // This ensures the card can be lifted up on drag
-                                zIndex: snapshot.isDragging ? 9999 : 'auto'
-                              }}
-                              className={`mb-2 p-3 rounded-md bg-white/5 hover:bg-white/10 border border-white/10 transition-all ${
-                                snapshot.isDragging ? 'shadow-lg shadow-black/40' : ''
-                              }`}
+                              {...provided.dragHandleProps}
+                              style={getItemStyle(
+                                snapshot.isDragging,
+                                provided.draggableProps.style
+                              )}
+                              className={`mb-2 p-3 rounded-md border border-white/10 transition-all`}
                             >
-                              {/* Added dragHandleProps to the entire card instead of just one element */}
-                              <div {...provided.dragHandleProps} className="cursor-move">
+                              <div className="cursor-move">
                                 <div className="text-sm font-medium">
                                   {prospect.first_name} {prospect.last_name}
                                 </div>
