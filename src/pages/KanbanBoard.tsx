@@ -132,6 +132,10 @@ const KanbanBoard = () => {
   
   // Enhanced function to get draggable styles for improved visual feedback
   const getItemStyle = (isDragging: boolean, draggableStyle: any) => ({
+    // Always maintain visibility
+    opacity: 1,
+    visibility: 'visible',
+    
     // basic styles to make the items look nice
     userSelect: 'none' as const,
     margin: '0 0 8px 0',
@@ -207,9 +211,10 @@ const KanbanBoard = () => {
                                   snapshot.isDragging,
                                   provided.draggableProps.style
                                 )}
-                                className={`mb-2 p-3 rounded-md border border-white/10 transition-all`}
+                                className="mb-2 p-3 rounded-md border border-white/10 transition-all"
                               >
-                                <div className={`${snapshot.isDragging ? 'pointer-events-none' : ''}`}>
+                                {/* Remove pointer-events-none to ensure card stays interactive */}
+                                <div className="cursor-move">
                                   <div className="text-sm font-medium">{card.name}</div>
                                   <div className="text-xs text-white/60 mt-1">{card.company}</div>
                                   <div className="flex items-center justify-between mt-2">

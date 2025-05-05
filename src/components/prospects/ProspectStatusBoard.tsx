@@ -136,13 +136,13 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
     toast.success(`${movedProspect.first_name} ${movedProspect.last_name} moved to ${destColumn.title}`);
   };
   
-  if (isLoading) {
-    return <div className="card p-8 text-center">Loading prospects...</div>;
-  }
-  
-  // Enhanced item style function with better drag preview
+  // Enhanced drag styles with fixed visibility
   const getItemStyle = (isDragging: boolean, draggableStyle: any) => ({
-    // basic styles to make the items look nice
+    // Always maintain visibility
+    opacity: 1,
+    visibility: 'visible',
+    
+    // Basic styles
     userSelect: 'none' as const,
     margin: '0 0 8px 0',
     
@@ -165,6 +165,10 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
     // styles we need to apply on draggables
     ...draggableStyle,
   });
+  
+  if (isLoading) {
+    return <div className="card p-8 text-center">Loading prospects...</div>;
+  }
   
   return (
     <div className="overflow-x-auto pb-4">
@@ -218,9 +222,10 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
                                 snapshot.isDragging,
                                 provided.draggableProps.style
                               )}
-                              className={`mb-2 p-3 rounded-md border border-white/10 transition-all`}
+                              className="mb-2 p-3 rounded-md border border-white/10 transition-all"
                             >
-                              <div className={`cursor-move ${snapshot.isDragging ? 'pointer-events-none' : ''}`}>
+                              {/* Force element to remain visible during drag */}
+                              <div className="cursor-move">
                                 <div className="text-sm font-medium">
                                   {prospect.first_name} {prospect.last_name}
                                 </div>
