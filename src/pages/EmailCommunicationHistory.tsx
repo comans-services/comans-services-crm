@@ -24,7 +24,9 @@ const EmailCommunicationHistory = () => {
       ...comm,
       clientName: `${client.first_name} ${client.last_name}`,
       clientEmail: client.email,
-      clientId: client.id
+      clientId: client.id,
+      // Add a default activity_type for all communications
+      activity_type: 'Email'
     }))
   );
 
@@ -103,7 +105,7 @@ const EmailCommunicationHistory = () => {
                       <TableCell className="py-4 px-4">
                         <div className="flex items-center">
                           <span className={`w-2.5 h-2.5 rounded-full bg-crm-accent mr-2`}></span>
-                          <span>{comm.activity_type || 'Email'}</span>
+                          <span>{comm.activity_type}</span>
                         </div>
                       </TableCell>
                       <TableCell className="py-4 px-4">
