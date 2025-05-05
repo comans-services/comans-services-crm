@@ -168,8 +168,11 @@ const KanbanBoard = () => {
     // Enhanced transition for smooth animation - no transitions during drag
     transition: isDragging ? 'none' : 'background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease',
     
-    // styles we need to apply on draggables
-    ...draggableStyle,
+    // Improve cursor positioning - stick to the cursor position and don't apply additional transforms
+    ...(isDragging ? { transformOrigin: '50% 50%' } : {}),
+    
+    // Apply draggable styles without overriding our positioning enhancements
+    ...(draggableStyle || {}),
   });
   
   return (

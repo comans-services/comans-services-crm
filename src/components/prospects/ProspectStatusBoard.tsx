@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { ProspectWithEngagement } from '@/services/mockDataService';
@@ -149,7 +148,7 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
     toast.success(`${movedProspect.first_name} ${movedProspect.last_name} moved to ${destColumn.title}`);
   };
   
-  // Enhanced drag styles with forced visibility
+  // Enhanced drag styles with improved cursor positioning
   const getItemStyle = (isDragging: boolean, draggableStyle: any) => ({
     // Always maintain visibility during drag
     opacity: 1,
@@ -176,8 +175,11 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
     // Enhanced transition for smooth animation
     transition: isDragging ? 'none' : 'background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease',
     
-    // styles we need to apply on draggables
-    ...draggableStyle,
+    // Improve cursor positioning - stick to the cursor position and don't apply additional transforms
+    ...(isDragging ? { transformOrigin: '50% 50%' } : {}),
+    
+    // Apply draggable styles without overriding our positioning enhancements
+    ...(draggableStyle || {}),
   });
   
   if (isLoading) {
