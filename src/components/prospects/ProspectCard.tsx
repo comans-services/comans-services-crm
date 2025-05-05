@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import { ProspectWithEngagement } from '@/services/mockDataService';
@@ -8,13 +9,10 @@ interface ProspectCardProps {
 }
 
 const ProspectCard: React.FC<ProspectCardProps> = ({ prospect, index }) => {
-  // Improved function to get draggable styles to ensure cursor alignment
+  // Improved function to get perfect cursor alignment during drag
   const getItemStyle = (isDragging: boolean, draggableStyle: any) => ({
-    // Keep item visible during drag
+    // Base styles
     userSelect: 'none' as const,
-    opacity: 1,
-    visibility: 'visible',
-    pointerEvents: 'auto',
     margin: '0 0 8px 0',
     
     // Visual feedback when dragging
@@ -22,18 +20,20 @@ const ProspectCard: React.FC<ProspectCardProps> = ({ prospect, index }) => {
     borderColor: isDragging ? 'rgb(59, 130, 246)' : 'rgba(255, 255, 255, 0.1)',
     boxShadow: isDragging ? '0 10px 15px rgba(0, 0, 0, 0.4)' : 'none',
     
-    // Don't apply any transforms that could offset the cursor position
-    transform: 'translate(0, 0)',
-    
-    // Apply the draggable styles but ensure we don't create offset issues
+    // Apply draggable styles but with better cursor alignment
     ...draggableStyle,
     
-    // Critical fix: Ensure the transform includes only what DnD needs for positioning
-    // and remove any scaling or other transforms that might cause misalignment
+    // Critical fix: Remove any transforms that aren't part of positioning
     ...(isDragging && draggableStyle && draggableStyle.transform
       ? {
+          // Ensure only translation happens without scaling
           transform: draggableStyle.transform.replace(/scale\([^)]+\)/g, ''),
-          transformOrigin: 'top left'
+          // Set transform origin to top left to match mouse position
+          transformOrigin: 'top left',
+          // Force full opacity and visibility during drag
+          opacity: '1 !important',
+          visibility: 'visible !important',
+          pointerEvents: 'auto !important',
         }
       : {})
   });
