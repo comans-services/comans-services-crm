@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { getRecommendedAction } from '@/utils/clientUtils';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { v4 as uuidv4 } from 'uuid';
 
 interface ProspectStatusBoardProps {
   prospects: ProspectWithEngagement[];
@@ -60,11 +61,23 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
     }
   ];
   
+  // Ensure each prospect has a unique draggable ID
+  const ensureUniqueIds = (prospects: ProspectWithEngagement[]): ProspectWithEngagement[] => {
+    return prospects.map(prospect => {
+      // If the ID looks like a duplicate (prospect-X format), generate a new unique ID
+      if (prospect.id.startsWith('prospect-')) {
+        return { ...prospect, dragId: `drag-${uuidv4()}` };
+      }
+      return { ...prospect, dragId: `drag-${prospect.id}` };
+    });
+  };
+
   // For demonstration, distribute prospects among statuses based on some logic
   const distributeProspects = (prospects: ProspectWithEngagement[]): StatusColumn[] => {
     const columns = [...initialColumns];
+    const uniqueProspects = ensureUniqueIds(prospects);
     
-    prospects.forEach(prospect => {
+    uniqueProspects.forEach(prospect => {
       const daysSinceLastContact = prospect.daysSinceLastContact;
       let statusId: string;
       
@@ -136,11 +149,12 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
     toast.success(`${movedProspect.first_name} ${movedProspect.last_name} moved to ${destColumn.title}`);
   };
   
-  // Enhanced drag styles with fixed visibility
+  // Enhanced drag styles with forced visibility
   const getItemStyle = (isDragging: boolean, draggableStyle: any) => ({
-    // Always maintain visibility
+    // Always maintain visibility during drag
     opacity: 1,
     visibility: 'visible',
+    pointerEvents: 'auto',
     
     // Basic styles
     userSelect: 'none' as const,
@@ -160,7 +174,7 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
     zIndex: isDragging ? 9999 : 1,
     
     // Enhanced transition for smooth animation
-    transition: 'background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease',
+    transition: isDragging ? 'none' : 'background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease',
     
     // styles we need to apply on draggables
     ...draggableStyle,
@@ -209,8 +223,8 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
                     >
                       {column.prospects.map((prospect, index) => (
                         <Draggable 
-                          key={prospect.id} 
-                          draggableId={prospect.id} 
+                          key={prospect.dragId || prospect.id} 
+                          draggableId={prospect.dragId || prospect.id} 
                           index={index}
                         >
                           {(provided, snapshot) => (
@@ -224,7 +238,6 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
                               )}
                               className="mb-2 p-3 rounded-md border border-white/10 transition-all"
                             >
-                              {/* Force element to remain visible during drag */}
                               <div className="cursor-move">
                                 <div className="text-sm font-medium">
                                   {prospect.first_name} {prospect.last_name}

@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { Plus, MoreHorizontal } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
 
 // Define client card types
 interface ClientCard {
@@ -10,6 +11,8 @@ interface ClientCard {
   company: string;
   industry: string;
   clientId: string;
+  // Add a unique drag ID to prevent key conflicts
+  dragId?: string;
 }
 
 // Define column types
@@ -19,68 +22,76 @@ interface Column {
   cards: ClientCard[];
 }
 
-// Sample initial data
+// Add unique dragIds to all cards
+const addUniqueDragIds = (cards: ClientCard[]): ClientCard[] => {
+  return cards.map(card => ({
+    ...card,
+    dragId: `drag-${uuidv4()}`
+  }));
+};
+
+// Sample initial data with unique dragIds
 const initialColumns: Column[] = [
   {
     id: 'opportunity',
     title: 'OPPORTUNITY',
-    cards: [
+    cards: addUniqueDragIds([
       { id: '1', name: 'Essential', company: 'Food Manufacturing', industry: 'Food', clientId: 'COM-6' },
       { id: '2', name: 'Premier Fresh Australia', company: 'Food Manufacturing', industry: 'Food', clientId: 'COM-9' },
       { id: '3', name: 'Scalzo Foods', company: 'Food Manufacturing', industry: 'Food', clientId: 'COM-12' }
-    ]
+    ])
   },
   {
     id: 'validated-opportunity',
     title: 'VALIDATED OPPORTUNITY',
-    cards: [
+    cards: addUniqueDragIds([
       { id: '4', name: 'Jemena', company: 'Energy', industry: 'Energy', clientId: 'COM-54' },
       { id: '5', name: 'Alkira', company: 'Tech Solutions', industry: 'Technology', clientId: 'COM-133' }
-    ]
+    ])
   },
   {
     id: 'meeting-booked',
     title: 'MEETING BOOKED',
-    cards: [
+    cards: addUniqueDragIds([
       { id: '6', name: 'Zinfra', company: 'Energy', industry: 'Energy', clientId: 'COM-3' },
       { id: '7', name: 'Brownes Dairy', company: 'Food manufacturing', industry: 'Food', clientId: 'COM-53' }
-    ]
+    ])
   },
   {
     id: 'quote-requested',
     title: 'QUOTE REQUESTED',
-    cards: []
+    cards: addUniqueDragIds([])
   },
   {
     id: 'quote-sent',
     title: 'QUOTE SENT',
-    cards: []
+    cards: addUniqueDragIds([])
   },
   {
     id: 'current-account',
     title: 'CURRENT ACCOUNT',
-    cards: [
+    cards: addUniqueDragIds([
       { id: '8', name: 'Saputo', company: 'Food Manufacturing', industry: 'Food', clientId: 'COM-1' },
       { id: '9', name: 'Vanessa New Company', company: 'Consulting', industry: 'Business', clientId: 'COM-63' },
       { id: '10', name: 'Bryce New Company', company: 'Tech', industry: 'Technology', clientId: 'COM-71' },
       { id: '11', name: 'Naz Care', company: 'Non Profit', industry: 'Health', clientId: 'COM-67' },
       { id: '12', name: 'Southerly Ten', company: 'Energy', industry: 'Energy', clientId: 'COM-55' }
-    ]
+    ])
   },
   {
     id: 'launch-account',
     title: 'LAUNCH ACCOUNT',
-    cards: []
+    cards: addUniqueDragIds([])
   },
   {
     id: 'won-work',
     title: 'WON WORK',
-    cards: []
+    cards: addUniqueDragIds([])
   },
   {
     id: 'lost-work',
     title: 'LOST WORK',
-    cards: []
+    cards: addUniqueDragIds([])
   }
 ];
 
@@ -132,9 +143,10 @@ const KanbanBoard = () => {
   
   // Enhanced function to get draggable styles for improved visual feedback
   const getItemStyle = (isDragging: boolean, draggableStyle: any) => ({
-    // Always maintain visibility
+    // Always maintain visibility during drag
     opacity: 1,
     visibility: 'visible',
+    pointerEvents: 'auto',
     
     // basic styles to make the items look nice
     userSelect: 'none' as const,
@@ -153,8 +165,8 @@ const KanbanBoard = () => {
     transform: isDragging ? 'scale(1.02)' : 'none',
     zIndex: isDragging ? 9999 : 1,
     
-    // Enhanced transition for smooth animation
-    transition: 'background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease',
+    // Enhanced transition for smooth animation - no transitions during drag
+    transition: isDragging ? 'none' : 'background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease',
     
     // styles we need to apply on draggables
     ...draggableStyle,
@@ -201,7 +213,11 @@ const KanbanBoard = () => {
                         }`}
                       >
                         {column.cards.map((card, index) => (
-                          <Draggable key={card.id} draggableId={card.id} index={index}>
+                          <Draggable 
+                            key={card.dragId || card.id} 
+                            draggableId={card.dragId || card.id} 
+                            index={index}
+                          >
                             {(provided, snapshot) => (
                               <div
                                 ref={provided.innerRef}
@@ -213,7 +229,6 @@ const KanbanBoard = () => {
                                 )}
                                 className="mb-2 p-3 rounded-md border border-white/10 transition-all"
                               >
-                                {/* Remove pointer-events-none to ensure card stays interactive */}
                                 <div className="cursor-move">
                                   <div className="text-sm font-medium">{card.name}</div>
                                   <div className="text-xs text-white/60 mt-1">{card.company}</div>
