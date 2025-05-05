@@ -1,4 +1,3 @@
-
 import { format, subDays } from 'date-fns';
 
 // Types that match our Supabase tables
@@ -39,6 +38,7 @@ export interface ProspectWithEngagement extends ProspectProfile {
   statusColor: string;
   recommendedAction: string;
   company: string;
+  dragId?: string; // Added dragId as an optional property
 }
 
 // Mock data generator
