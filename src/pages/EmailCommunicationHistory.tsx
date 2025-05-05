@@ -7,10 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Activity, Calendar, Upload, Search } from 'lucide-react';
+import { Activity, Calendar, Search } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const EmailCommunicationHistory = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedEmail, setSelectedEmail] = useState<any>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   
   // Fetch clients data using React Query
   const { data: clients = [], isLoading } = useQuery({
@@ -42,6 +45,11 @@ const EmailCommunicationHistory = () => {
     comm.clientEmail.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleEmailClick = (communication: any) => {
+    setSelectedEmail(communication);
+    setIsDialogOpen(true);
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
@@ -61,11 +69,11 @@ const EmailCommunicationHistory = () => {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl font-bold">All Communications</CardTitle>
+      <Card className="bg-black text-white border border-white/10">
+        <CardHeader className="border-b border-white/10">
+          <CardTitle className="text-xl font-bold text-white">All Communications</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {isLoading ? (
             <div className="text-center py-10">
               <p className="text-white/70">Loading communications...</p>
@@ -94,7 +102,11 @@ const EmailCommunicationHistory = () => {
                 </TableHeader>
                 <TableBody>
                   {filteredCommunications.map((comm, index) => (
-                    <TableRow key={index} className="border-b border-white/10 hover:bg-white/5 transition-colors">
+                    <TableRow 
+                      key={index} 
+                      className="border-b border-white/10 hover:bg-white/5 transition-colors cursor-pointer"
+                      onClick={() => handleEmailClick(comm)}
+                    >
                       <TableCell className="py-4 px-4">
                         <div>
                           <p className="font-medium">{comm.clientName}</p>
@@ -116,7 +128,10 @@ const EmailCommunicationHistory = () => {
                           variant="outline" 
                           size="sm"
                           className="border-white/20 text-white hover:bg-white/10"
-                          onClick={() => window.open(`/clients/${comm.clientId}`, '_blank')}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(`/clients/${comm.clientId}`, '_blank');
+                          }}
                         >
                           View Client
                         </Button>
@@ -133,6 +148,58 @@ const EmailCommunicationHistory = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Email Detail Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="bg-black/90 backdrop-blur-md border border-white/20 text-white max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-white">Email Details</DialogTitle>
+          </DialogHeader>
+          
+          {selectedEmail && (
+            <div className="space-y-4">
+              <div className="border-b border-white/10 pb-3">
+                <p className="text-sm text-white/70">From</p>
+                <p className="font-medium">{selectedEmail.salesperson_email}</p>
+              </div>
+              
+              <div className="border-b border-white/10 pb-3">
+                <p className="text-sm text-white/70">To</p>
+                <p className="font-medium">{selectedEmail.clientEmail}</p>
+              </div>
+              
+              <div className="border-b border-white/10 pb-3">
+                <p className="text-sm text-white/70">Subject</p>
+                <p className="font-medium">{selectedEmail.subject_text}</p>
+              </div>
+              
+              <div className="border-b border-white/10 pb-3">
+                <p className="text-sm text-white/70">Date</p>
+                <p className="font-medium">
+                  {format(new Date(selectedEmail.date_of_communication), 'MMMM d, yyyy - h:mm a')}
+                </p>
+              </div>
+              
+              <div className="pt-2 whitespace-pre-wrap">
+                <p className="text-sm text-white/70">Message</p>
+                <div className="mt-2 bg-white/5 p-4 rounded-md">
+                  {selectedEmail.body_text}
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsDialogOpen(false)}
+                  className="border-white/20 text-white hover:bg-white/10"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
