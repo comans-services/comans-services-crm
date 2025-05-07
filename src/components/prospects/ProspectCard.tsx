@@ -50,7 +50,11 @@ const ProspectCard: React.FC<ProspectCardProps> = ({ prospect, index }) => {
             snapshot.isDragging,
             provided.draggableProps.style
           )}
-          className="mb-2 p-3 rounded-md border border-white/10 transition-all"
+          className={`mb-2 p-3 rounded-md border transition-all ${
+            snapshot.isDragging 
+              ? 'border-blue-500 shadow-lg z-50' 
+              : 'border-white/10'
+          }`}
         >
           <div className="cursor-move">
             <div className="text-sm font-medium">
