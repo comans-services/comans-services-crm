@@ -9,11 +9,10 @@ interface ProspectCardProps {
 }
 
 const ProspectCard: React.FC<ProspectCardProps> = ({ prospect, index }) => {
-  // Perfected cursor alignment during drag operations
+  // Improved function to get perfect cursor alignment during drag
   const getItemStyle = (isDragging: boolean, draggableStyle: any) => ({
     // Base styles
     userSelect: 'none' as const,
-    padding: 0,
     margin: '0 0 8px 0',
     
     // Visual feedback when dragging
@@ -21,34 +20,22 @@ const ProspectCard: React.FC<ProspectCardProps> = ({ prospect, index }) => {
     borderColor: isDragging ? 'rgb(59, 130, 246)' : 'rgba(255, 255, 255, 0.1)',
     boxShadow: isDragging ? '0 10px 15px rgba(0, 0, 0, 0.4)' : 'none',
     
-    // Critical alignment fixes for cursor
-    ...(isDragging ? {
-      // Remove any margin or padding that could cause offset
-      pointerEvents: 'none',
-      // Set position to fixed to avoid any offset from parent containers
-      position: 'fixed',
-      // Top and left are controlled by the library, we need to ensure no additional offset
-      zIndex: 9999,
-      // Force full opacity and visibility
-      opacity: 1,
-      visibility: 'visible',
-      // Remove any transform scale that might cause misalignment
-      transform: draggableStyle?.transform 
-        ? draggableStyle.transform.replace(/scale\([^)]+\)/g, '') 
-        : 'translate(0px, 0px)',
-      // Set transform origin to top left corner for precise positioning
-      transformOrigin: 'top left',
-      // Remove any transition that could make the card lag behind cursor
-      transition: 'none',
-      // Allow click-through for a smoother experience
-      pointerEvents: 'none',
-      // Ensure width matches original width to prevent resizing during drag
-      width: draggableStyle?.width || 'auto',
-      cursor: 'grabbing',
-    } : {}),
-    
-    // Apply draggable styles provided by the library
+    // Apply draggable styles but with better cursor alignment
     ...draggableStyle,
+    
+    // Critical fix: Remove any transforms that aren't part of positioning
+    ...(isDragging && draggableStyle && draggableStyle.transform
+      ? {
+          // Ensure only translation happens without scaling
+          transform: draggableStyle.transform.replace(/scale\([^)]+\)/g, ''),
+          // Set transform origin to top left to match mouse position
+          transformOrigin: 'top left',
+          // Force full opacity and visibility during drag
+          opacity: '1 !important',
+          visibility: 'visible !important',
+          pointerEvents: 'auto !important',
+        }
+      : {})
   });
 
   return (
@@ -66,11 +53,7 @@ const ProspectCard: React.FC<ProspectCardProps> = ({ prospect, index }) => {
             snapshot.isDragging,
             provided.draggableProps.style
           )}
-          className={`mb-2 p-3 rounded-md border transition-all ${
-            snapshot.isDragging 
-              ? 'border-blue-500'
-              : 'border-white/10'
-          }`}
+          className="mb-2 p-3 rounded-md border border-white/10 transition-all"
         >
           <div className="cursor-move">
             <div className="text-sm font-medium">
