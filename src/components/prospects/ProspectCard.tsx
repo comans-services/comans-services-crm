@@ -23,19 +23,16 @@ const ProspectCard: React.FC<ProspectCardProps> = ({ prospect, index }) => {
     // Apply draggable styles but with better cursor alignment
     ...draggableStyle,
     
-    // Critical fix: Remove any transforms that aren't part of positioning
-    ...(isDragging && draggableStyle && draggableStyle.transform
-      ? {
-          // Ensure only translation happens without scaling
-          transform: draggableStyle.transform.replace(/scale\([^)]+\)/g, ''),
-          // Set transform origin to top left to match mouse position
-          transformOrigin: 'top left',
-          // Force full opacity and visibility during drag
-          opacity: '1 !important',
-          visibility: 'visible !important',
-          pointerEvents: 'auto !important',
-        }
-      : {})
+    // Critical fix for cursor alignment: use fixed positioning and remove transforms that aren't needed
+    ...(isDragging && {
+      position: 'fixed',
+      top: 'auto',  // Let the drag system control the positioning
+      left: 'auto', // Let the drag system control the positioning
+      margin: 0,    // Remove margin during drag
+      transformOrigin: 'top left',
+      transition: 'none',  // Disable transitions during drag for better responsiveness
+      zIndex: 9999, // Ensure dragged item is above everything else
+    })
   });
 
   return (
