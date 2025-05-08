@@ -1,3 +1,4 @@
+
 /**
  * Get status color based on days since last contact
  */
