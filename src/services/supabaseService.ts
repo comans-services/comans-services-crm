@@ -21,6 +21,7 @@ export interface ProspectWithEngagement {
   engagement?: {
     id: string;
     prospect_id: string;
+    engagement_stage_id: string | null;
     last_contact_date: string | null;
     created_at: string;
     updated_at: string;
