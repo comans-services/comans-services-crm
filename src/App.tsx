@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -20,7 +19,14 @@ import TeamManagement from "./pages/TeamManagement";
 import TodaysTasks from "./pages/TodaysTasks";
 import EmailCommunicationHistory from "./pages/EmailCommunicationHistory";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

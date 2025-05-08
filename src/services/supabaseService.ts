@@ -1,4 +1,3 @@
-
 // src/services/supabaseService.ts
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -107,48 +106,55 @@ export const fetchDealStages = async (): Promise<DealStage[]> => {
 
 export const fetchProspects = async (): Promise<Prospect[]> => {
   console.log('Fetching prospects from Supabase...');
-  const { data, error } = await supabase
-    .from('prospect_profile')
-    .select(`
-      *,
-      prospect_engagement(last_contact_date)
-    `);
+  
+  try {
+    const { data, error } = await supabase
+      .from('prospect_profile')
+      .select(`
+        *,
+        prospect_engagement(last_contact_date)
+      `);
 
-  if (error) {
-    console.error('Error fetching prospects:', error);
-    toast.error('Failed to load prospects');
+    if (error) {
+      console.error('Error fetching prospects:', error);
+      toast.error('Failed to load prospects');
+      return [];
+    }
+
+    console.log('Raw prospects data from Supabase:', data);
+    
+    if (!data || data.length === 0) {
+      console.log('No prospects found in the database');
+      return [];
+    }
+
+    /* Add UI helpers */
+    const processedData = data.map((p: any) => {
+      const lastContactDate =
+        p.prospect_engagement?.[0]?.last_contact_date ?? null;
+
+      const daysSinceLastContact =
+        lastContactDate
+          ? Math.ceil(
+              (Date.now() - new Date(lastContactDate).getTime()) /
+                (1000 * 60 * 60 * 24),
+            )
+          : null;
+
+      return {
+        ...p,
+        dragId: `drag-${p.id}`,
+        daysSinceLastContact,
+      };
+    });
+    
+    console.log('Processed prospects data:', processedData);
+    return processedData;
+  } catch (e) {
+    console.error('Unexpected error in fetchProspects:', e);
+    toast.error('An unexpected error occurred while loading clients');
     return [];
   }
-
-  console.log('Raw prospects data from Supabase:', data);
-  
-  if (!data || data.length === 0) {
-    console.log('No prospects found in the database');
-    return [];
-  }
-
-  /* Add UI helpers */
-  const processedData = (data ?? []).map((p: any) => {
-    const lastContactDate =
-      p.prospect_engagement?.[0]?.last_contact_date ?? null;
-
-    const daysSinceLastContact =
-      lastContactDate
-        ? Math.ceil(
-            (Date.now() - new Date(lastContactDate).getTime()) /
-              (1000 * 60 * 60 * 24),
-          )
-        : null;
-
-    return {
-      ...p,
-      dragId: `drag-${p.id}`,
-      daysSinceLastContact,
-    };
-  });
-  
-  console.log('Processed prospects data:', processedData);
-  return processedData;
 };
 
 /* Get single prospect */
@@ -191,20 +197,27 @@ export const fetchProspectById = async (id: string): Promise<Prospect | null> =>
 /* Get prospects by company */
 export const getProspectsByCompany = async (): Promise<Record<string, Prospect[]>> => {
   console.log('Fetching prospects grouped by company...');
-  const prospects = await fetchProspects();
   
-  const companiesMap: Record<string, Prospect[]> = {};
-  
-  prospects.forEach(prospect => {
-    const company = (prospect.company || 'other').toLowerCase();
-    if (!companiesMap[company]) {
-      companiesMap[company] = [];
-    }
-    companiesMap[company].push(prospect);
-  });
-  
-  console.log('Companies data:', Object.keys(companiesMap));
-  return companiesMap;
+  try {
+    const prospects = await fetchProspects();
+    
+    const companiesMap: Record<string, Prospect[]> = {};
+    
+    prospects.forEach(prospect => {
+      const company = (prospect.company || 'other').toLowerCase();
+      if (!companiesMap[company]) {
+        companiesMap[company] = [];
+      }
+      companiesMap[company].push(prospect);
+    });
+    
+    console.log('Companies data:', Object.keys(companiesMap));
+    return companiesMap;
+  } catch (e) {
+    console.error('Unexpected error in getProspectsByCompany:', e);
+    toast.error('An unexpected error occurred while loading company data');
+    return {};
+  }
 };
 
 /* ──────────────────────────────────────────────────────────────── */

@@ -100,9 +100,9 @@ const Clients = () => {
 
   // Log when filtered clients change
   const filteredClients = clients.filter(client => 
-    client.first_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    client.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    client.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    client.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    client.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (client.company || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
   
@@ -118,7 +118,7 @@ const Clients = () => {
   if (clientsError) {
     return <div className="card p-6">
       <h2 className="text-xl font-bold text-red-500 mb-2">Error loading clients</h2>
-      <p className="text-white/70">{clientsError.message || 'Unknown error occurred'}</p>
+      <p className="text-white/70">{(clientsError as Error).message || 'Unknown error occurred'}</p>
       <Button onClick={() => queryClient.invalidateQueries({ queryKey: ['prospects'] })} 
         className="mt-4">
         Retry
