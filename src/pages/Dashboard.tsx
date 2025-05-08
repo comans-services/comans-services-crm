@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Users, Mail, Calendar, TrendingUp, Bell, ArrowRight, CheckCircle } from 'lucide-react';
-import { getMockProspects, ProspectWithEngagement } from '../services/mockDataService';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useQuery } from '@tanstack/react-query';
+import { ProspectWithEngagement, getProspects } from '@/services/supabaseService';
 
 const StatCard = ({ title, value, icon, color }: { title: string; value: string | number; icon: React.ReactNode; color: string }) => (
   <div className="card hover-scale">
@@ -43,7 +43,7 @@ const Dashboard = () => {
   // Fetch prospects using React Query
   const { data: prospects = [], isLoading, error } = useQuery({
     queryKey: ['prospects'],
-    queryFn: getMockProspects,
+    queryFn: getProspects,
   });
 
   // Handle "Add Client" button click
@@ -92,7 +92,7 @@ const Dashboard = () => {
         type: 'follow-up',
         prospect,
         priority: 'medium' as const,
-        description: `Follow up with ${prospect.first_name} ${prospect.last_name} from ${prospect.company}`
+        description: `Follow up with ${prospect.first_name} ${prospect.last_name} from ${prospect.company || 'Unknown'}`
       });
     }
     
@@ -200,7 +200,7 @@ const Dashboard = () => {
                   </div>
                   
                   <div className="text-right">
-                    <p className="text-sm text-white/70">{task.prospect.company}</p>
+                    <p className="text-sm text-white/70">{task.prospect.company || 'Unknown'}</p>
                     <p className="text-xs text-white/50">
                       {task.prospect.daysSinceLastContact} days ago
                     </p>
@@ -224,15 +224,15 @@ const Dashboard = () => {
         <div className="card bg-black/80 backdrop-blur-md border border-white/20">
           <h2 className="text-xl font-bold mb-4">Companies</h2>
           <div className="space-y-4">
-            {Array.from(new Set(prospects.map(p => p.company))).slice(0, 5).map((company, i) => {
-              const companyProspects = prospects.filter(p => p.company === company);
+            {Array.from(new Set(prospects.map(p => p.company || 'Unknown'))).slice(0, 5).map((company, i) => {
+              const companyProspects = prospects.filter(p => (p.company || 'Unknown') === company);
               return (
                 <div key={i} className="flex items-center justify-between border-b border-white/10 pb-3">
                   <div className="flex items-center">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-crm-background-from to-crm-background-to flex items-center justify-center mr-3">
-                      <span className="font-bold text-xs">{company.substring(0, 2).toUpperCase()}</span>
+                      <span className="font-bold text-xs">{(company || '').substring(0, 2).toUpperCase()}</span>
                     </div>
-                    <p>{company.charAt(0).toUpperCase() + company.slice(1)}</p>
+                    <p>{(company || '').charAt(0).toUpperCase() + (company || '').slice(1)}</p>
                   </div>
                   <span className="text-xs text-white/50">
                     {companyProspects.length} prospect{companyProspects.length !== 1 ? 's' : ''}
@@ -252,7 +252,7 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {prospects.slice(0, 3).flatMap(p => p.communications).slice(0, 4).map((comm, i) => (
+              {prospects.slice(0, 3).flatMap(p => p.communications || []).slice(0, 4).map((comm, i) => (
                 <div key={i} className="flex items-start border-b border-white/10 pb-4">
                   <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mr-3">
                     <Mail size={18} />
@@ -260,7 +260,7 @@ const Dashboard = () => {
                   <div>
                     <p className="font-medium">{comm.subject_text}</p>
                     <p className="text-sm text-white/70">
-                      To: {comm.prospect_first_name} {comm.prospect_last_name}
+                      To: {comm.prospect_first_name || ''} {comm.prospect_last_name || ''}
                     </p>
                     <p className="text-xs text-white/50 mt-1">
                       {format(new Date(comm.date_of_communication), 'MMM d, yyyy')}

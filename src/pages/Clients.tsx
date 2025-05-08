@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Search, Plus, Edit, MoreVertical, Users, Building } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { getMockProspects, getProspectsByCompany } from '@/services/mockDataService';
+import { getProspects, getProspectsByCompany } from '@/services/supabaseService';
 import { 
   Tabs, 
   TabsContent, 
@@ -18,7 +18,7 @@ const Clients = () => {
 
   const { data: clients = [], isLoading: isLoadingClients } = useQuery({
     queryKey: ['prospects'],
-    queryFn: getMockProspects,
+    queryFn: getProspects,
   });
   
   const { data: companiesMap = {}, isLoading: isLoadingCompanies } = useQuery({
@@ -30,7 +30,7 @@ const Clients = () => {
     client.first_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     client.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.company.toLowerCase().includes(searchTerm.toLowerCase())
+    (client.company || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Custom block styling for AI Generated Action Items and Email Communication History
@@ -85,7 +85,7 @@ const Clients = () => {
         <h2 className="text-xl font-bold mb-4">Email Communication History</h2>
         <div className="space-y-4">
           {clients.slice(0, 3).flatMap(client => 
-            client.communications.slice(0, 1).map((comm, idx) => (
+            (client.communications || []).slice(0, 1).map((comm, idx) => (
               <div key={idx} className="border border-white/10 p-4 rounded-md">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
@@ -97,7 +97,7 @@ const Clients = () => {
                   </div>
                 </div>
                 <h5 className="font-medium text-sm mb-1">{comm.subject_text}</h5>
-                <p className="text-sm text-white/70 mb-2 line-clamp-2">{comm.body_text.substring(0, 120)}...</p>
+                <p className="text-sm text-white/70 mb-2 line-clamp-2">{(comm.body_text || '').substring(0, 120)}...</p>
                 <div className="text-xs text-white/50">{new Date(comm.date_of_communication).toLocaleDateString()}</div>
               </div>
             ))
@@ -152,7 +152,7 @@ const Clients = () => {
                             {client.first_name} {client.last_name}
                           </Link>
                         </td>
-                        <td className="py-4 px-4">{client.company.charAt(0).toUpperCase() + client.company.slice(1)}</td>
+                        <td className="py-4 px-4">{client.company ? client.company.charAt(0).toUpperCase() + client.company.slice(1) : 'Unknown'}</td>
                         <td className="py-4 px-4">{client.email}</td>
                         <td className="py-4 px-4">
                           {client.daysSinceLastContact !== null 
