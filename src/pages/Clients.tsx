@@ -26,12 +26,14 @@ const Clients = () => {
     queryFn: fetchProspects,
     staleTime: 0, // Don't use cache, always fetch fresh data
     retry: 3, // Retry failed requests up to 3 times
-    onSuccess: (data) => {
-      console.log('Successfully fetched clients data:', data);
-    },
-    onError: (err) => {
-      console.error('Error fetching clients data:', err);
-      toast.error('Failed to load clients data');
+    meta: {
+      onSuccess: (data: any) => {
+        console.log('Successfully fetched clients data:', data);
+      },
+      onError: (err: any) => {
+        console.error('Error fetching clients data:', err);
+        toast.error('Failed to load clients data');
+      }
     }
   });
   
@@ -41,12 +43,14 @@ const Clients = () => {
     queryFn: getProspectsByCompany,
     staleTime: 0, // Don't use cache
     retry: 3, // Retry failed requests
-    onSuccess: (data) => {
-      console.log('Successfully fetched companies data:', data);
-    },
-    onError: (err) => {
-      console.error('Error fetching companies data:', err);
-      toast.error('Failed to load companies data');
+    meta: {
+      onSuccess: (data: any) => {
+        console.log('Successfully fetched companies data:', data);
+      },
+      onError: (err: any) => {
+        console.error('Error fetching companies data:', err);
+        toast.error('Failed to load companies data');
+      }
     }
   });
 
