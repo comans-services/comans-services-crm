@@ -30,6 +30,7 @@ import {
   setupRealTimeSubscription 
 } from '@/services/supabaseService';
 import { formatDistanceToNow } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
 
 interface TeamMemberFormData {
   id?: string;
@@ -222,7 +223,6 @@ const TeamManagement = () => {
                         <span className={`px-2 py-1 rounded-full text-xs ${
                           member.role === 'admin' ? 'bg-crm-accent/20 text-crm-accent' : 'bg-blue-500/20 text-blue-500'
                         }`}>
-                          {/* Display capitalized role for UI but use lowercase for API */}
                           {member.role === 'admin' ? 'Admin' : 'Salesperson'}
                         </span>
                       </TableCell>
@@ -367,4 +367,3 @@ const TeamManagement = () => {
 };
 
 export default TeamManagement;
-
