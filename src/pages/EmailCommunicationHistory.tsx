@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getProspects } from '@/services/supabaseService';
+import { getMockProspects } from '@/services/mockDataService';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,12 +18,12 @@ const EmailCommunicationHistory = () => {
   // Fetch clients data using React Query
   const { data: clients = [], isLoading } = useQuery({
     queryKey: ['prospects'],
-    queryFn: getProspects,
+    queryFn: getMockProspects,
   });
 
   // Flatten communications from all clients
   const allCommunications = clients.flatMap(client => 
-    (client.communications || []).map(comm => ({
+    client.communications.map(comm => ({
       ...comm,
       clientName: `${client.first_name} ${client.last_name}`,
       clientEmail: client.email,

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getProspects, ProspectWithEngagement } from '@/services/supabaseService';
+import { getMockProspects, ProspectWithEngagement } from '@/services/mockDataService';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, CheckCircle } from 'lucide-react';
@@ -29,7 +29,7 @@ const TodaysTasks = () => {
   // Fetch prospects using React Query
   const { data: prospects = [], isLoading, error } = useQuery({
     queryKey: ['prospects'],
-    queryFn: getProspects,
+    queryFn: getMockProspects,
   });
 
   // Generate prioritized to-do list for today
@@ -56,7 +56,7 @@ const TodaysTasks = () => {
         type: 'follow-up',
         prospect,
         priority: 'medium' as const,
-        description: `Follow up with ${prospect.first_name} ${prospect.last_name} from ${prospect.company || 'Unknown company'}`
+        description: `Follow up with ${prospect.first_name} ${prospect.last_name} from ${prospect.company}`
       });
     }
     
@@ -140,7 +140,7 @@ const TodaysTasks = () => {
                 </div>
                 
                 <div className="text-right">
-                  <p className="text-sm text-white/70">{task.prospect.company || 'No company'}</p>
+                  <p className="text-sm text-white/70">{task.prospect.company}</p>
                   <p className="text-xs text-white/50">
                     {task.prospect.daysSinceLastContact} days ago
                   </p>

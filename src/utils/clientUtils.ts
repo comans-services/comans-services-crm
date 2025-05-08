@@ -1,4 +1,6 @@
 
+import { ProspectProfile, ProspectWithEngagement } from '@/services/mockDataService';
+
 /**
  * Extracts the domain from an email address
  */
@@ -12,6 +14,28 @@ export const extractDomain = (email: string): string => {
  */
 export const getDomainCompany = (domain: string): string => {
   return domain.split('.')[0] || '';
+};
+
+/**
+ * Groups prospects by company domain
+ */
+export const groupProspectsByDomain = (
+  prospects: ProspectWithEngagement[]
+): Record<string, ProspectWithEngagement[]> => {
+  const companiesMap: Record<string, ProspectWithEngagement[]> = {};
+  
+  prospects.forEach(prospect => {
+    const domain = extractDomain(prospect.email);
+    const company = getDomainCompany(domain);
+    
+    if (!companiesMap[company]) {
+      companiesMap[company] = [];
+    }
+    
+    companiesMap[company].push(prospect);
+  });
+  
+  return companiesMap;
 };
 
 /**

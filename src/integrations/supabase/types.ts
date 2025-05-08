@@ -9,169 +9,9 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      app_user: {
-        Row: {
-          created_at: string
-          email: string
-          first_name: string
-          id: string
-          last_active: string | null
-          last_name: string
-          role: Database["public"]["Enums"]["user_role"]
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          first_name: string
-          id?: string
-          last_active?: string | null
-          last_name: string
-          role: Database["public"]["Enums"]["user_role"]
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          first_name?: string
-          id?: string
-          last_active?: string | null
-          last_name?: string
-          role?: Database["public"]["Enums"]["user_role"]
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      deal_stage: {
-        Row: {
-          created_at: string
-          id: string
-          name: string
-          sort_order: number
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          name: string
-          sort_order: number
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          name?: string
-          sort_order?: number
-        }
-        Relationships: []
-      }
-      engagement_stage: {
-        Row: {
-          created_at: string
-          id: string
-          name: string
-          sort_order: number
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          name: string
-          sort_order: number
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          name?: string
-          sort_order?: number
-        }
-        Relationships: []
-      }
-      file_attachment: {
-        Row: {
-          file_name: string
-          file_url: string
-          id: string
-          prospect_id: string
-          uploaded_at: string
-          uploaded_by: string | null
-        }
-        Insert: {
-          file_name: string
-          file_url: string
-          id?: string
-          prospect_id: string
-          uploaded_at?: string
-          uploaded_by?: string | null
-        }
-        Update: {
-          file_name?: string
-          file_url?: string
-          id?: string
-          prospect_id?: string
-          uploaded_at?: string
-          uploaded_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "file_attachment_prospect_id_fkey"
-            columns: ["prospect_id"]
-            isOneToOne: false
-            referencedRelation: "prospect_profile"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "file_attachment_uploaded_by_fkey"
-            columns: ["uploaded_by"]
-            isOneToOne: false
-            referencedRelation: "app_user"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      lead_source: {
-        Row: {
-          created_at: string
-          id: string
-          name: string
-          sort_order: number
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          name: string
-          sort_order: number
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          name?: string
-          sort_order?: number
-        }
-        Relationships: []
-      }
-      persona: {
-        Row: {
-          created_at: string
-          id: string
-          name: string
-          sort_order: number
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          name: string
-          sort_order: number
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          name?: string
-          sort_order?: number
-        }
-        Relationships: []
-      }
       prospect_engagement: {
         Row: {
           created_at: string
-          engagement_stage_id: string | null
           id: string
           last_contact_date: string | null
           prospect_id: string
@@ -179,7 +19,6 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          engagement_stage_id?: string | null
           id?: string
           last_contact_date?: string | null
           prospect_id: string
@@ -187,20 +26,12 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          engagement_stage_id?: string | null
           id?: string
           last_contact_date?: string | null
           prospect_id?: string
           updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "prospect_engagement_engagement_stage_id_fkey"
-            columns: ["engagement_stage_id"]
-            isOneToOne: false
-            referencedRelation: "engagement_stage"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "prospect_engagement_prospect_id_fkey"
             columns: ["prospect_id"]
@@ -212,73 +43,30 @@ export type Database = {
       }
       prospect_profile: {
         Row: {
-          address: string | null
-          client_since: string | null
-          company: string | null
           created_at: string
-          deal_stage_id: string | null
           email: string
           first_name: string
           id: string
           last_name: string
-          lead_source_id: string | null
-          persona_id: string | null
-          phone: string | null
           updated_at: string
         }
         Insert: {
-          address?: string | null
-          client_since?: string | null
-          company?: string | null
           created_at?: string
-          deal_stage_id?: string | null
           email: string
           first_name: string
           id?: string
           last_name: string
-          lead_source_id?: string | null
-          persona_id?: string | null
-          phone?: string | null
           updated_at?: string
         }
         Update: {
-          address?: string | null
-          client_since?: string | null
-          company?: string | null
           created_at?: string
-          deal_stage_id?: string | null
           email?: string
           first_name?: string
           id?: string
           last_name?: string
-          lead_source_id?: string | null
-          persona_id?: string | null
-          phone?: string | null
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "prospect_profile_deal_stage_id_fkey"
-            columns: ["deal_stage_id"]
-            isOneToOne: false
-            referencedRelation: "deal_stage"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "prospect_profile_lead_source_id_fkey"
-            columns: ["lead_source_id"]
-            isOneToOne: false
-            referencedRelation: "lead_source"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "prospect_profile_persona_id_fkey"
-            columns: ["persona_id"]
-            isOneToOne: false
-            referencedRelation: "persona"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       sales_tracking: {
         Row: {
@@ -286,7 +74,9 @@ export type Database = {
           created_at: string
           date_of_communication: string
           id: string
+          prospect_first_name: string
           prospect_id: string
+          prospect_last_name: string
           salesperson_email: string
           subject_text: string
           updated_at: string
@@ -296,7 +86,9 @@ export type Database = {
           created_at?: string
           date_of_communication?: string
           id?: string
+          prospect_first_name: string
           prospect_id: string
+          prospect_last_name: string
           salesperson_email: string
           subject_text: string
           updated_at?: string
@@ -306,7 +98,9 @@ export type Database = {
           created_at?: string
           date_of_communication?: string
           id?: string
+          prospect_first_name?: string
           prospect_id?: string
+          prospect_last_name?: string
           salesperson_email?: string
           subject_text?: string
           updated_at?: string
@@ -321,70 +115,9 @@ export type Database = {
           },
         ]
       }
-      user_activity: {
-        Row: {
-          activity_detail: Json | null
-          activity_type: string
-          id: string
-          occurred_at: string
-          user_id: string
-        }
-        Insert: {
-          activity_detail?: Json | null
-          activity_type: string
-          id?: string
-          occurred_at?: string
-          user_id: string
-        }
-        Update: {
-          activity_detail?: Json | null
-          activity_type?: string
-          id?: string
-          occurred_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_activity_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "app_user"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Views: {
-      v_sales_tracking: {
-        Row: {
-          address: string | null
-          body_text: string | null
-          client_since: string | null
-          company: string | null
-          created_at: string | null
-          date_of_communication: string | null
-          days_since_contact: number | null
-          email: string | null
-          first_name: string | null
-          id: string | null
-          last_name: string | null
-          phone: string | null
-          prospect_id: string | null
-          salesperson_email: string | null
-          status_colour: string | null
-          subject_text: string | null
-          updated_at: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "sales_tracking_prospect_id_fkey"
-            columns: ["prospect_id"]
-            isOneToOne: false
-            referencedRelation: "prospect_profile"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
       get_contact_status_color: {
@@ -397,7 +130,7 @@ export type Database = {
       }
     }
     Enums: {
-      user_role: "admin" | "salesperson"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -512,8 +245,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      user_role: ["admin", "salesperson"],
-    },
+    Enums: {},
   },
 } as const

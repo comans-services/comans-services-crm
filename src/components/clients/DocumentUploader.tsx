@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { Upload, FileText } from 'lucide-react';
-import { extractActionItemsFromDocument, ActionItem } from '@/services/aiService';
+import { extractActionItemsFromDocument, ActionItem } from '@/services/mockAiService';
 import { format } from 'date-fns';
 
 interface DocumentUploaderProps {
