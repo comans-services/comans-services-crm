@@ -1,3 +1,4 @@
+
 // src/services/supabaseService.ts
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -31,6 +32,37 @@ export interface DealStage {
   name: string;
   sort_order: number;
   created_at: string;
+}
+
+export interface Communication {
+  id: string;
+  subject_text: string;
+  body_text: string | null;
+  salesperson_email: string;
+  prospect_id: string;
+  date_of_communication: string;
+  created_at: string;
+  updated_at: string;
+  prospect_profile?: {
+    first_name: string;
+    last_name: string;
+  };
+}
+
+export interface Task {
+  id: string;
+  task_description: string;
+  task_type: string;
+  priority: 'high' | 'medium' | 'low';
+  due_date: string;
+  completed: boolean;
+  prospect_id: string;
+  created_at: string;
+  updated_at: string;
+  prospect_profile?: {
+    first_name: string;
+    last_name: string;
+  };
 }
 
 /* ──────────────────────────────────────────────────────────────── */
@@ -92,7 +124,7 @@ export const fetchProspects = async (): Promise<Prospect[]> => {
 };
 
 /* ──────────────────────────────────────────────────────────────── */
-/*  Update prospect’s stage                                        */
+/*  Update prospect's stage                                        */
 /* ──────────────────────────────────────────────────────────────── */
 
 export const updateProspectDealStage = async (
@@ -111,5 +143,74 @@ export const updateProspectDealStage = async (
   }
 
   toast.success('Prospect status updated');
+  return true;
+};
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  Communications                                                 */
+/* ──────────────────────────────────────────────────────────────── */
+
+export const fetchAllCommunications = async (): Promise<Communication[]> => {
+  const { data, error } = await supabase
+    .from('sales_tracking')
+    .select(`
+      *,
+      prospect_profile (
+        first_name,
+        last_name
+      )
+    `)
+    .order('date_of_communication', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching communications:', error);
+    toast.error('Failed to load communications');
+    return [];
+  }
+
+  return data ?? [];
+};
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  Tasks                                                          */
+/* ──────────────────────────────────────────────────────────────── */
+
+export const fetchTasks = async (): Promise<Task[]> => {
+  const { data, error } = await supabase
+    .from('today_tasks')
+    .select(`
+      *,
+      prospect_profile (
+        first_name,
+        last_name
+      )
+    `)
+    .order('due_date', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching tasks:', error);
+    toast.error('Failed to load tasks');
+    return [];
+  }
+
+  return data ?? [];
+};
+
+export const toggleTaskCompletion = async (
+  taskId: string, 
+  completed: boolean
+): Promise<boolean> => {
+  const { error } = await supabase
+    .from('today_tasks')
+    .update({ completed })
+    .eq('id', taskId);
+
+  if (error) {
+    console.error('Error updating task completion:', error);
+    toast.error('Failed to update task');
+    return false;
+  }
+
+  toast.success(completed ? 'Task marked as completed' : 'Task marked as incomplete');
   return true;
 };
