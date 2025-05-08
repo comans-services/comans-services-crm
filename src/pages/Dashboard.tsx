@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Users, Mail, Calendar, TrendingUp, Bell, ArrowRight, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
@@ -252,22 +253,27 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {prospects.slice(0, 3).flatMap(p => p.communications || []).slice(0, 4).map((comm, i) => (
-                <div key={i} className="flex items-start border-b border-white/10 pb-4">
-                  <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mr-3">
-                    <Mail size={18} />
+              {prospects.slice(0, 3).flatMap(p => p.communications || []).slice(0, 4).map((comm, i) => {
+                // Find the prospect that this communication belongs to
+                const relatedProspect = prospects.find(p => p.id === comm.prospect_id);
+                
+                return (
+                  <div key={i} className="flex items-start border-b border-white/10 pb-4">
+                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mr-3">
+                      <Mail size={18} />
+                    </div>
+                    <div>
+                      <p className="font-medium">{comm.subject_text}</p>
+                      <p className="text-sm text-white/70">
+                        To: {relatedProspect?.first_name || ''} {relatedProspect?.last_name || ''}
+                      </p>
+                      <p className="text-xs text-white/50 mt-1">
+                        {format(new Date(comm.date_of_communication), 'MMM d, yyyy')}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium">{comm.subject_text}</p>
-                    <p className="text-sm text-white/70">
-                      To: {comm.prospect_first_name || ''} {comm.prospect_last_name || ''}
-                    </p>
-                    <p className="text-xs text-white/50 mt-1">
-                      {format(new Date(comm.date_of_communication), 'MMM d, yyyy')}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
           <CardFooter>
