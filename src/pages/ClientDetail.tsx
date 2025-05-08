@@ -1,9 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit, Mail, Phone, Building, User, FileText, Upload } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { getMockProspectById } from '@/services/mockDataService';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getProspectById, setupRealTimeSubscription } from '@/services/supabaseService';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,15 +15,52 @@ import { ActionItem } from '@/services/mockAiService';
 const ClientDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const clientId = id || '';
   const [actionItems, setActionItems] = useState<ActionItem[]>([]);
   
   // Fetch client data using React Query
   const { data: client, isLoading, error } = useQuery({
     queryKey: ['client', clientId],
-    queryFn: () => getMockProspectById(clientId),
+    queryFn: () => getProspectById(clientId),
     enabled: !!clientId,
   });
+
+  // Setup real-time subscription for client data
+  useEffect(() => {
+    if (!clientId) return;
+    
+    // Subscribe to changes to this prospect
+    const unsubProspect = setupRealTimeSubscription('prospect_profile', '*', (payload) => {
+      if (payload.new?.id === clientId) {
+        queryClient.invalidateQueries({ queryKey: ['client', clientId] });
+      }
+    });
+    
+    // Subscribe to engagement changes
+    const unsubEngagement = setupRealTimeSubscription('prospect_engagement', '*', (payload) => {
+      if (payload.new?.prospect_id === clientId) {
+        queryClient.invalidateQueries({ queryKey: ['client', clientId] });
+      }
+    });
+    
+    // Subscribe to sales tracking changes
+    const unsubSalesTracking = setupRealTimeSubscription('sales_tracking', '*', (payload) => {
+      if (payload.new?.prospect_id === clientId) {
+        queryClient.invalidateQueries({ queryKey: ['client', clientId] });
+        toast({
+          title: "Communication Updated",
+          description: "A new communication has been added or updated.",
+        });
+      }
+    });
+    
+    return () => {
+      unsubProspect();
+      unsubEngagement();
+      unsubSalesTracking();
+    };
+  }, [clientId, queryClient]);
 
   const handleActionItemsExtracted = (items: ActionItem[]) => {
     setActionItems(prevItems => [...items, ...prevItems]);
@@ -41,6 +78,9 @@ const ClientDetail = () => {
     return (
       <div className="text-center py-20">
         <h2 className="text-2xl font-bold mb-4">Client Not Found</h2>
+        <p className="mb-6 text-white/70">
+          The client you're looking for doesn't exist or there was an error loading their data.
+        </p>
         <Button 
           className="btn-primary"
           onClick={() => navigate('/clients')}

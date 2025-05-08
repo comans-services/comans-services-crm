@@ -1,18 +1,59 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
+import { createProspect } from '@/services/supabaseService';
 
 const ClientForm = () => {
   const navigate = useNavigate();
-  
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // In a real app, we would save the form data here
-    // For now, just navigate back to the clients list
-    navigate('/clients');
+  const queryClient = useQueryClient();
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    company: '',
+    phone: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
-  
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const newClient = await createProspect({
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        email: formData.email,
+        company: formData.company,
+        phone: formData.phone
+      });
+
+      toast.success(`Client ${formData.firstName} ${formData.lastName} created successfully`);
+      
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['prospects'] });
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      
+      // Redirect to client detail page
+      navigate(`/clients/${newClient.id}`);
+    } catch (error: any) {
+      toast.error(`Error creating client: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div>
       <button 
@@ -27,93 +68,93 @@ const ClientForm = () => {
         <h1 className="text-3xl font-bold">Add New Client</h1>
       </div>
       
-      <div className="card">
-        <form onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div>
-              <label htmlFor="name" className="block text-sm text-white/70 mb-2">
-                Full Name
-              </label>
-              <input
-                id="name"
-                type="text"
-                className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-crm-accent/50"
-                placeholder="John Smith"
+      <div className="card max-w-2xl mx-auto">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="firstName">First Name</Label>
+              <Input
+                id="firstName"
+                name="firstName"
+                placeholder="John"
+                value={formData.firstName}
+                onChange={handleChange}
+                required
+                className="bg-white/10 border-white/20 text-white"
               />
             </div>
             
-            <div>
-              <label htmlFor="company" className="block text-sm text-white/70 mb-2">
-                Company
-              </label>
-              <input
-                id="company"
-                type="text"
-                className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-crm-accent/50"
-                placeholder="Acme Corp"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="email" className="block text-sm text-white/70 mb-2">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-crm-accent/50"
-                placeholder="john@example.com"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="phone" className="block text-sm text-white/70 mb-2">
-                Phone
-              </label>
-              <input
-                id="phone"
-                type="text"
-                className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-crm-accent/50"
-                placeholder="(123) 456-7890"
+            <div className="space-y-2">
+              <Label htmlFor="lastName">Last Name</Label>
+              <Input
+                id="lastName"
+                name="lastName"
+                placeholder="Doe"
+                value={formData.lastName}
+                onChange={handleChange}
+                required
+                className="bg-white/10 border-white/20 text-white"
               />
             </div>
           </div>
           
-          <div className="mb-6">
-            <label htmlFor="address" className="block text-sm text-white/70 mb-2">
-              Address
-            </label>
-            <input
-              id="address"
-              type="text"
-              className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-crm-accent/50"
-              placeholder="123 Main St, City, State, ZIP"
+          <div className="space-y-2">
+            <Label htmlFor="email">Email Address</Label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="john.doe@example.com"
+              value={formData.email}
+              onChange={handleChange}
+              required
+              className="bg-white/10 border-white/20 text-white"
             />
           </div>
           
-          <div className="mb-6">
-            <label htmlFor="notes" className="block text-sm text-white/70 mb-2">
-              Notes
-            </label>
-            <textarea
-              id="notes"
-              rows={4}
-              className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-crm-accent/50"
-              placeholder="Add any notes about this client..."
-            ></textarea>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="company">Company</Label>
+              <Input
+                id="company"
+                name="company"
+                placeholder="Acme Inc."
+                value={formData.company}
+                onChange={handleChange}
+                className="bg-white/10 border-white/20 text-white"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input
+                id="phone"
+                name="phone"
+                placeholder="(123) 456-7890"
+                value={formData.phone}
+                onChange={handleChange}
+                className="bg-white/10 border-white/20 text-white"
+              />
+            </div>
           </div>
           
-          <div className="flex justify-end gap-4">
-            <button 
-              type="button" 
-              className="px-4 py-2 border border-white/20 rounded-md hover:bg-white/10 transition-colors"
+          <div className="flex justify-end space-x-4 pt-4">
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => navigate('/clients')}
+              className="border-white/20 text-white"
+              disabled={isSubmitting}
             >
               Cancel
-            </button>
-            <button type="submit" className="btn-primary">
-              Save Client
-            </button>
+            </Button>
+            <Button
+              type="submit"
+              className="bg-crm-accent hover:bg-crm-accent/90"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Creating...' : 'Create Client'}
+            </Button>
           </div>
         </form>
       </div>

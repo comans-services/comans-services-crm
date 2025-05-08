@@ -21,7 +21,18 @@ import CommunicationHistory from "./pages/CommunicationHistory";
 import TodaysTasks from "./pages/TodaysTasks";
 import EmailCommunicationHistory from "./pages/EmailCommunicationHistory";
 
-const queryClient = new QueryClient();
+// Configure React Query for better real-time data handling
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: true,
+      refetchOnMount: true,
+      refetchOnReconnect: true,
+      staleTime: 1000 * 60, // 1 minute
+      retry: 2,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

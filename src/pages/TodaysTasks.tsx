@@ -1,11 +1,12 @@
 
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { getMockProspects, ProspectWithEngagement } from '@/services/mockDataService';
+import React, { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getProspects, setupRealTimeSubscription } from '@/services/supabaseService';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { ProspectWithEngagement } from '@/services/mockDataService';
 
 // Priority indicator component
 const PriorityIndicator = ({ priority }: { priority: 'high' | 'medium' | 'low' }) => {
@@ -25,12 +26,24 @@ const PriorityIndicator = ({ priority }: { priority: 'high' | 'medium' | 'low' }
 
 const TodaysTasks = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   
   // Fetch prospects using React Query
   const { data: prospects = [], isLoading, error } = useQuery({
     queryKey: ['prospects'],
-    queryFn: getMockProspects,
+    queryFn: getProspects,
   });
+
+  // Setup real-time subscriptions
+  useEffect(() => {
+    const unsubscribe = setupRealTimeSubscription('prospect_engagement', '*', () => {
+      queryClient.invalidateQueries({ queryKey: ['prospects'] });
+    });
+    
+    return () => {
+      unsubscribe();
+    };
+  }, [queryClient]);
 
   // Generate prioritized to-do list for today
   const generatePrioritizedTasks = (prospects: ProspectWithEngagement[]) => {
@@ -88,7 +101,15 @@ const TodaysTasks = () => {
   }
 
   if (error) {
-    return <div className="text-red-500">Error loading tasks data</div>;
+    return (
+      <div className="card p-8 text-center">
+        <h2 className="text-xl font-bold mb-4">Error Loading Data</h2>
+        <p className="text-white/70 mb-6">There was a problem loading task data from the database.</p>
+        <Button onClick={() => queryClient.invalidateQueries({ queryKey: ['prospects'] })}>
+          Retry
+        </Button>
+      </div>
+    );
   }
 
   return (

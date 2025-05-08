@@ -1,7 +1,7 @@
 
-import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { getMockProspects } from '@/services/mockDataService';
+import React, { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getProspects, createProspect, setupRealTimeSubscription } from '@/services/supabaseService';
 import ProspectStatusBoard from '@/components/prospects/ProspectStatusBoard';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -9,9 +9,10 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 const CommunicationHistory = () => {
-  const { data: prospects = [], isLoading, refetch } = useQuery({
+  const queryClient = useQueryClient();
+  const { data: prospects = [], isLoading, error, refetch } = useQuery({
     queryKey: ['prospects'],
-    queryFn: getMockProspects,
+    queryFn: getProspects,
   });
 
   const [isNewLeadDialogOpen, setIsNewLeadDialogOpen] = useState(false);
@@ -22,20 +23,60 @@ const CommunicationHistory = () => {
     company: '',
   });
 
+  // Setup real-time subscriptions
+  useEffect(() => {
+    // Subscribe to prospect profile changes
+    const unsubProfiles = setupRealTimeSubscription('prospect_profile', '*', () => {
+      queryClient.invalidateQueries({ queryKey: ['prospects'] });
+    });
+    
+    // Subscribe to engagement changes
+    const unsubEngagements = setupRealTimeSubscription('prospect_engagement', '*', () => {
+      queryClient.invalidateQueries({ queryKey: ['prospects'] });
+    });
+    
+    return () => {
+      unsubProfiles();
+      unsubEngagements();
+    };
+  }, [queryClient]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setNewLead((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleCreateLead = (e: React.FormEvent) => {
+  const handleCreateLead = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, this would create the lead in the backend
-    toast.success(`New lead created: ${newLead.firstName} ${newLead.lastName}`);
-    setIsNewLeadDialogOpen(false);
-    setNewLead({ firstName: '', lastName: '', email: '', company: '' });
-    // Refresh the prospects list
-    refetch();
+    try {
+      await createProspect({
+        first_name: newLead.firstName,
+        last_name: newLead.lastName,
+        email: newLead.email,
+        company: newLead.company
+      });
+      
+      toast.success(`New lead created: ${newLead.firstName} ${newLead.lastName}`);
+      setIsNewLeadDialogOpen(false);
+      setNewLead({ firstName: '', lastName: '', email: '', company: '' });
+      // Refresh the prospects list
+      queryClient.invalidateQueries({ queryKey: ['prospects'] });
+    } catch (error: any) {
+      toast.error(`Failed to create lead: ${error.message}`);
+    }
   };
+
+  if (error) {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="card p-8 text-center">
+          <h2 className="text-xl font-bold mb-4">Error Loading Data</h2>
+          <p className="text-white/70 mb-6">There was a problem loading prospect data from the database.</p>
+          <Button onClick={() => refetch()}>Retry</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full">

@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit, MoreVertical, Users, Building } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { getMockProspects, getProspectsByCompany } from '@/services/mockDataService';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getProspects, getProspectsByCompany, setupRealTimeSubscription } from '@/services/supabaseService';
 import { 
   Tabs, 
   TabsContent, 
@@ -10,21 +11,50 @@ import {
   TabsTrigger 
 } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 const Clients = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentTab, setCurrentTab] = useState('all');
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  const { data: clients = [], isLoading: isLoadingClients } = useQuery({
+  const { data: clients = [], isLoading: isLoadingClients, error: clientsError } = useQuery({
     queryKey: ['prospects'],
-    queryFn: getMockProspects,
+    queryFn: getProspects,
   });
   
-  const { data: companiesMap = {}, isLoading: isLoadingCompanies } = useQuery({
+  const { data: companiesMap = {}, isLoading: isLoadingCompanies, error: companiesError } = useQuery({
     queryKey: ['companies'],
     queryFn: getProspectsByCompany,
   });
+  
+  // Setup real-time subscriptions
+  useEffect(() => {
+    // Subscribe to prospect_profile changes
+    const unsubscribeProfiles = setupRealTimeSubscription('prospect_profile', '*', (payload) => {
+      queryClient.invalidateQueries({ queryKey: ['prospects'] });
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      toast.info('Client data updated');
+    });
+    
+    // Subscribe to prospect_engagement changes
+    const unsubscribeEngagements = setupRealTimeSubscription('prospect_engagement', '*', (payload) => {
+      queryClient.invalidateQueries({ queryKey: ['prospects'] });
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+    });
+    
+    // Subscribe to sales_tracking changes
+    const unsubscribeSalesTracking = setupRealTimeSubscription('sales_tracking', '*', (payload) => {
+      queryClient.invalidateQueries({ queryKey: ['prospects'] });
+    });
+    
+    return () => {
+      unsubscribeProfiles();
+      unsubscribeEngagements();
+      unsubscribeSalesTracking();
+    };
+  }, [queryClient]);
 
   const filteredClients = clients.filter(client => 
     client.first_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -33,8 +63,27 @@ const Clients = () => {
     client.company.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const hasError = clientsError || companiesError;
+
   // Custom block styling for AI Generated Action Items and Email Communication History
   const blackBoxStyle = "bg-black text-white border border-white/20 rounded-crm shadow-lg p-6";
+
+  if (hasError) {
+    return (
+      <div className="card p-8 text-center">
+        <h2 className="text-xl font-bold mb-4">Error Loading Data</h2>
+        <p className="text-white/70 mb-6">There was a problem loading client data from the database.</p>
+        <Button 
+          onClick={() => {
+            queryClient.invalidateQueries({ queryKey: ['prospects'] });
+            queryClient.invalidateQueries({ queryKey: ['companies'] });
+          }}
+        >
+          Retry
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -97,7 +146,7 @@ const Clients = () => {
                   </div>
                 </div>
                 <h5 className="font-medium text-sm mb-1">{comm.subject_text}</h5>
-                <p className="text-sm text-white/70 mb-2 line-clamp-2">{comm.body_text.substring(0, 120)}...</p>
+                <p className="text-sm text-white/70 mb-2 line-clamp-2">{comm.body_text ? `${comm.body_text.substring(0, 120)}...` : 'No content'}</p>
                 <div className="text-xs text-white/50">{new Date(comm.date_of_communication).toLocaleDateString()}</div>
               </div>
             ))
@@ -127,6 +176,15 @@ const Clients = () => {
           <div className="card">
             {isLoadingClients ? (
               <div className="p-8 text-center">Loading clients...</div>
+            ) : filteredClients.length === 0 ? (
+              <div className="p-8 text-center">
+                <p className="text-white/70 mb-4">No clients found.</p>
+                <Button 
+                  onClick={() => navigate('/clients/new')}
+                >
+                  Add Your First Client
+                </Button>
+              </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -182,6 +240,15 @@ const Clients = () => {
         <TabsContent value="company" className="mt-6">
           {isLoadingCompanies ? (
             <div className="card p-8 text-center">Loading companies...</div>
+          ) : Object.keys(companiesMap).length === 0 ? (
+            <div className="card p-8 text-center">
+              <p className="text-white/70 mb-4">No companies found.</p>
+              <Button 
+                onClick={() => navigate('/clients/new')}
+              >
+                Add Your First Client
+              </Button>
+            </div>
           ) : (
             <div className="space-y-6">
               {Object.entries(companiesMap).map(([companyName, companyClients]) => (
