@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Edit, Trash2, Plus, Mail, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
@@ -20,54 +20,84 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-// Mock team members data
-const mockTeamMembers = [
-  { id: 1, name: 'John Adams', email: 'john@ourcrm.com', role: 'Admin', lastActive: '10 minutes ago' },
-  { id: 2, name: 'Sarah Johnson', email: 'sarah@ourcrm.com', role: 'Salesperson', lastActive: '2 hours ago' },
-  { id: 3, name: 'Mike Williams', email: 'mike@ourcrm.com', role: 'Salesperson', lastActive: '1 day ago' },
-  { id: 4, name: 'Lisa Brown', email: 'lisa@ourcrm.com', role: 'Admin', lastActive: '3 minutes ago' },
-];
-
-// Mock activity log data
-const mockActivityLog = [
-  { id: 1, user: 'John Adams', action: 'Added a new client', time: '10 minutes ago' },
-  { id: 2, user: 'Sarah Johnson', action: 'Sent a newsletter', time: '2 hours ago' },
-  { id: 3, user: 'Mike Williams', action: 'Updated client information', time: '1 day ago' },
-  { id: 4, user: 'Lisa Brown', action: 'Deleted a client', time: '2 days ago' },
-  { id: 5, user: 'John Adams', action: 'Exported client report', time: '3 days ago' },
-];
+import { getTeamMembers, addTeamMember, updateTeamMember, removeTeamMember, getUserActivity, setupRealTimeSubscription } from '@/services/supabaseService';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 interface TeamMemberFormData {
-  id?: number;
-  name: string;
+  id?: string;
+  first_name: string;
+  last_name: string;
   email: string;
-  role: 'Admin' | 'Salesperson';
+  role: string;
 }
 
 const TeamManagement = () => {
-  const [teamMembers, setTeamMembers] = useState(mockTeamMembers);
-  const [activityLog] = useState(mockActivityLog);
+  const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentMember, setCurrentMember] = useState<TeamMemberFormData>({
-    name: '',
+    first_name: '',
+    last_name: '',
     email: '',
     role: 'Salesperson'
   });
 
-  const handleDeleteMember = (id: number) => {
+  // Fetch team members
+  const { 
+    data: teamMembers = [], 
+    isLoading: isLoadingTeam,
+    error: teamError
+  } = useQuery({
+    queryKey: ['team-members'],
+    queryFn: getTeamMembers
+  });
+
+  // Fetch activity logs
+  const { 
+    data: activityLog = [], 
+    isLoading: isLoadingActivity,
+    error: activityError
+  } = useQuery({
+    queryKey: ['user-activity'],
+    queryFn: () => getUserActivity(10)
+  });
+
+  // Set up real-time subscriptions
+  useEffect(() => {
+    const unsubTeam = setupRealTimeSubscription('app_user', '*', () => {
+      queryClient.invalidateQueries({ queryKey: ['team-members'] });
+    });
+    
+    const unsubActivity = setupRealTimeSubscription('user_activity', '*', () => {
+      queryClient.invalidateQueries({ queryKey: ['user-activity'] });
+    });
+    
+    return () => {
+      unsubTeam();
+      unsubActivity();
+    };
+  }, [queryClient]);
+
+  const handleDeleteMember = (id: string) => {
     // Show confirmation toast
     toast({
       title: "Confirm Deletion",
       description: "Are you sure you want to delete this team member?",
       action: (
         <Button 
-          onClick={() => {
-            setTeamMembers(teamMembers.filter(member => member.id !== id));
-            toast({
-              title: "Team member removed",
-              description: "The team member has been removed successfully.",
-            });
+          onClick={async () => {
+            try {
+              await removeTeamMember(id);
+              toast({
+                title: "Team member removed",
+                description: "The team member has been removed successfully.",
+              });
+            } catch (error: any) {
+              toast({
+                title: "Error",
+                description: error.message,
+                variant: "destructive"
+              });
+            }
           }}
           variant="destructive"
         >
@@ -77,63 +107,76 @@ const TeamManagement = () => {
     });
   };
 
-  const handleEditMember = (member: typeof teamMembers[0]) => {
+  const handleEditMember = (member: any) => {
     setCurrentMember({
       id: member.id,
-      name: member.name,
+      first_name: member.first_name,
+      last_name: member.last_name,
       email: member.email,
-      role: member.role as 'Admin' | 'Salesperson'
+      role: member.role
     });
     setIsDialogOpen(true);
   };
 
   const handleAddNewMember = () => {
     setCurrentMember({
-      name: '',
+      first_name: '',
+      last_name: '',
       email: '',
       role: 'Salesperson'
     });
     setIsDialogOpen(true);
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (currentMember.id) {
-      // Update existing member
-      setTeamMembers(teamMembers.map(member => 
-        member.id === currentMember.id ? { 
-          ...member, 
-          name: currentMember.name,
+    try {
+      if (currentMember.id) {
+        // Update existing member
+        await updateTeamMember(currentMember.id, {
+          first_name: currentMember.first_name,
+          last_name: currentMember.last_name,
           email: currentMember.email,
           role: currentMember.role
-        } : member
-      ));
+        });
+        
+        toast({
+          title: "Team member updated",
+          description: `${currentMember.first_name} ${currentMember.last_name} has been updated successfully.`,
+        });
+      } else {
+        // Add new member
+        await addTeamMember({
+          first_name: currentMember.first_name,
+          last_name: currentMember.last_name,
+          email: currentMember.email,
+          role: currentMember.role
+        });
+        
+        toast({
+          title: "Team member added",
+          description: `${currentMember.first_name} ${currentMember.last_name} has been added successfully.`,
+        });
+      }
       
+      setIsDialogOpen(false);
+    } catch (error: any) {
       toast({
-        title: "Team member updated",
-        description: `${currentMember.name} has been updated successfully.`,
-      });
-    } else {
-      // Add new member
-      const newMember = {
-        id: teamMembers.length + 1,
-        name: currentMember.name,
-        email: currentMember.email,
-        role: currentMember.role,
-        lastActive: 'Just now'
-      };
-      
-      setTeamMembers([...teamMembers, newMember]);
-      
-      toast({
-        title: "Team member added",
-        description: `${currentMember.name} has been added successfully.`,
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
       });
     }
-    
-    setIsDialogOpen(false);
   };
+
+  if (isLoadingTeam || isLoadingActivity) {
+    return <div className="text-center py-10">Loading team data...</div>;
+  }
+
+  if (teamError || activityError) {
+    return <div className="text-center py-10 text-red-500">Error loading data. Please try again.</div>;
+  }
 
   return (
     <div>
@@ -168,7 +211,7 @@ const TeamManagement = () => {
                         <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center mr-2">
                           <User size={14} />
                         </div>
-                        {member.name}
+                        {member.first_name} {member.last_name}
                       </div>
                     </TableCell>
                     <TableCell className="text-white">{member.email}</TableCell>
@@ -181,7 +224,10 @@ const TeamManagement = () => {
                     </TableCell>
                     <TableCell className="text-white">
                       <div className="flex items-center text-white/70">
-                        <Clock size={14} className="mr-1" /> {member.lastActive}
+                        <Clock size={14} className="mr-1" /> 
+                        {member.last_active 
+                          ? `${formatTimeAgo(new Date(member.last_active))}`
+                          : 'Never'}
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
@@ -207,20 +253,28 @@ const TeamManagement = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {activityLog.map((log) => (
+              {activityLog.length > 0 ? activityLog.map((log) => (
                 <div key={log.id} className="flex items-start border-b border-white/10 pb-4 last:border-0">
                   <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center mr-3">
                     <User size={14} />
                   </div>
                   <div>
                     <p>
-                      <span className="font-medium">{log.user}</span>{' '}
-                      <span className="text-white/70">{log.action}</span>
+                      <span className="font-medium">
+                        {log.app_user?.first_name} {log.app_user?.last_name}
+                      </span>{' '}
+                      <span className="text-white/70">{log.activity_type}</span>
                     </p>
-                    <p className="text-xs text-white/50 mt-1">{log.time}</p>
+                    <p className="text-xs text-white/50 mt-1">
+                      {formatTimeAgo(new Date(log.occurred_at))}
+                    </p>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <div className="text-center py-4 text-white/50">
+                  No activity recorded yet
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -239,37 +293,56 @@ const TeamManagement = () => {
           
           <form onSubmit={handleFormSubmit}>
             <div className="space-y-4 py-2">
-              <div className="grid w-full items-center gap-2">
-                <label htmlFor="name" className="text-sm font-medium">Name</label>
-                <input
-                  type="text"
-                  id="name"
-                  value={currentMember.name}
-                  onChange={(e) => setCurrentMember({...currentMember, name: e.target.value})}
-                  className="px-3 py-2 bg-white/5 border border-white/20 rounded-md focus:outline-none focus:ring-2 focus:ring-crm-accent/50 text-white"
-                  required
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="first_name" className="text-sm font-medium mb-2 block text-white">
+                    First Name
+                  </label>
+                  <input
+                    type="text"
+                    id="first_name"
+                    value={currentMember.first_name}
+                    onChange={(e) => setCurrentMember({...currentMember, first_name: e.target.value})}
+                    className="px-3 py-2 bg-white/5 border border-white/20 rounded-md focus:outline-none focus:ring-2 focus:ring-crm-accent/50 text-white w-full"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="last_name" className="text-sm font-medium mb-2 block text-white">
+                    Last Name
+                  </label>
+                  <input
+                    type="text"
+                    id="last_name"
+                    value={currentMember.last_name}
+                    onChange={(e) => setCurrentMember({...currentMember, last_name: e.target.value})}
+                    className="px-3 py-2 bg-white/5 border border-white/20 rounded-md focus:outline-none focus:ring-2 focus:ring-crm-accent/50 text-white w-full"
+                    required
+                  />
+                </div>
               </div>
-              
-              <div className="grid w-full items-center gap-2">
-                <label htmlFor="email" className="text-sm font-medium">Email</label>
+              <div>
+                <label htmlFor="email" className="text-sm font-medium mb-2 block text-white">
+                  Email
+                </label>
                 <input
                   type="email"
                   id="email"
                   value={currentMember.email}
                   onChange={(e) => setCurrentMember({...currentMember, email: e.target.value})}
-                  className="px-3 py-2 bg-white/5 border border-white/20 rounded-md focus:outline-none focus:ring-2 focus:ring-crm-accent/50 text-white"
+                  className="px-3 py-2 bg-white/5 border border-white/20 rounded-md focus:outline-none focus:ring-2 focus:ring-crm-accent/50 text-white w-full"
                   required
                 />
               </div>
-              
-              <div className="grid w-full items-center gap-2">
-                <label htmlFor="role" className="text-sm font-medium">Role</label>
+              <div>
+                <label htmlFor="role" className="text-sm font-medium mb-2 block text-white">
+                  Role
+                </label>
                 <select
                   id="role"
                   value={currentMember.role}
-                  onChange={(e) => setCurrentMember({...currentMember, role: e.target.value as 'Admin' | 'Salesperson'})}
-                  className="px-3 py-2 bg-[#0f133e] border border-white/20 rounded-md focus:outline-none focus:ring-2 focus:ring-crm-accent/50 text-white"
+                  onChange={(e) => setCurrentMember({...currentMember, role: e.target.value})}
+                  className="px-3 py-2 bg-[#0f133e] border border-white/20 rounded-md focus:outline-none focus:ring-2 focus:ring-crm-accent/50 text-white w-full"
                 >
                   <option value="Admin" className="bg-[#0f133e] text-white">Admin</option>
                   <option value="Salesperson" className="bg-[#0f133e] text-white">Salesperson</option>
@@ -289,5 +362,22 @@ const TeamManagement = () => {
     </div>
   );
 };
+
+// Helper function to format time ago
+function formatTimeAgo(date: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSecs = Math.floor(diffMs / 1000);
+  const diffMins = Math.floor(diffSecs / 60);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffSecs < 60) return 'Just now';
+  if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+  if (diffDays < 30) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+  
+  return format(date, 'MMM d, yyyy');
+}
 
 export default TeamManagement;

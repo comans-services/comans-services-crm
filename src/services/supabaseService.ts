@@ -1,7 +1,118 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { getStatusColor, getRecommendedAction, extractDomain, getDomainCompany } from '@/utils/clientUtils';
-import { ProspectProfile, ProspectEngagement, SalesTracking, ProspectWithEngagement } from '@/services/mockDataService';
+
+// Types for Supabase tables
+export interface ProspectProfile {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  company?: string;
+  phone?: string;
+  address?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProspectEngagement {
+  id: string;
+  prospect_id: string;
+  last_contact_date: string | null;
+  engagement_stage_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SalesTracking {
+  id: string;
+  prospect_id: string;
+  prospect_first_name: string;
+  prospect_last_name: string;
+  salesperson_email: string;
+  subject_text: string;
+  body_text: string | null;
+  date_of_communication: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TeamMember {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  role: string;
+  last_active?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserActivity {
+  id: string;
+  user_id: string;
+  activity_type: string;
+  activity_detail?: any;
+  occurred_at: string;
+}
+
+export interface ActionItem {
+  id: string;
+  title: string;
+  description: string;
+  priority: 'high' | 'medium' | 'low';
+  dueDate: string;
+  createdAt: string;
+  completed: boolean;
+}
+
+export interface ProspectWithEngagement extends ProspectProfile {
+  engagement: ProspectEngagement;
+  communications: SalesTracking[];
+  daysSinceLastContact: number | null;
+  statusColor: string;
+  recommendedAction: string;
+  company: string;
+  dragId?: string; // Add dragId property for drag-and-drop functionality
+}
+
+// Helper function to extract action items from document
+export function extractActionItemsFromDocument(documentText: string): ActionItem[] {
+  // This is a mock implementation that simulates AI extraction
+  const currentDate = new Date();
+  const twoWeeksFromNow = new Date(currentDate);
+  twoWeeksFromNow.setDate(currentDate.getDate() + 14);
+  
+  return [
+    {
+      id: `ai-${Date.now()}-1`,
+      title: 'Follow up on pricing discussion',
+      description: 'Discuss the updated pricing structure based on the client\'s requirements',
+      priority: 'high',
+      dueDate: new Date(currentDate.setDate(currentDate.getDate() + 2)).toISOString(),
+      createdAt: new Date().toISOString(),
+      completed: false
+    },
+    {
+      id: `ai-${Date.now()}-2`,
+      title: 'Send product specifications',
+      description: 'Share detailed specifications for the enterprise plan',
+      priority: 'medium',
+      dueDate: new Date(currentDate.setDate(currentDate.getDate() + 5)).toISOString(),
+      createdAt: new Date().toISOString(),
+      completed: false
+    },
+    {
+      id: `ai-${Date.now()}-3`,
+      title: 'Schedule technical demo',
+      description: 'Arrange a technical demonstration with the IT department',
+      priority: 'low',
+      dueDate: twoWeeksFromNow.toISOString(),
+      createdAt: new Date().toISOString(),
+      completed: false
+    }
+  ];
+}
 
 /**
  * Fetches all prospects with their engagement data from Supabase
@@ -76,30 +187,16 @@ export const getProspects = async (): Promise<ProspectWithEngagement[]> => {
       const domain = extractDomain(profile.email);
       const company = profile.company || getDomainCompany(domain);
 
+      // Add dragId for drag-and-drop functionality
       return {
-        id: profile.id,
-        first_name: profile.first_name,
-        last_name: profile.last_name,
-        email: profile.email,
-        company,
-        created_at: profile.created_at,
-        updated_at: profile.updated_at,
+        ...profile,
         engagement,
-        communications: prospectCommunications.map(comm => ({
-          id: comm.id,
-          prospect_id: comm.prospect_id,
-          prospect_first_name: profile.first_name,
-          prospect_last_name: profile.last_name,
-          salesperson_email: comm.salesperson_email,
-          subject_text: comm.subject_text,
-          body_text: comm.body_text,
-          date_of_communication: comm.date_of_communication,
-          created_at: comm.created_at,
-          updated_at: comm.updated_at
-        })),
+        communications: prospectCommunications,
         daysSinceLastContact,
         statusColor,
-        recommendedAction
+        recommendedAction,
+        company,
+        dragId: `drag-${profile.id}`
       };
     });
 
@@ -192,18 +289,14 @@ export const getProspectById = async (id: string): Promise<ProspectWithEngagemen
     })) || [];
 
     return {
-      id: profile.id,
-      first_name: profile.first_name,
-      last_name: profile.last_name,
-      email: profile.email,
-      company,
-      created_at: profile.created_at,
-      updated_at: profile.updated_at,
+      ...profile,
       engagement: prospectEngagement,
       communications: prospectCommunications,
       daysSinceLastContact,
       statusColor,
-      recommendedAction
+      recommendedAction,
+      company,
+      dragId: `drag-${profile.id}`
     };
   } catch (error) {
     console.error('Error in getProspectById:', error);
@@ -276,18 +369,14 @@ export const createProspect = async (prospect: {
   const company = profile.company || getDomainCompany(domain);
 
   return {
-    id: profile.id,
-    first_name: profile.first_name,
-    last_name: profile.last_name,
-    email: profile.email,
-    company,
-    created_at: profile.created_at,
-    updated_at: profile.updated_at,
+    ...profile,
     engagement,
     communications: [],
     daysSinceLastContact: null,
     statusColor: 'gray',
-    recommendedAction: 'Initial contact recommended'
+    recommendedAction: 'Initial contact recommended',
+    company,
+    dragId: `drag-${profile.id}`
   };
 };
 
@@ -347,6 +436,110 @@ export const getTeamMembers = async () => {
   }
 
   return data || [];
+};
+
+/**
+ * Adds a new team member
+ */
+export const addTeamMember = async (member: {
+  first_name: string;
+  last_name: string;
+  email: string;
+  role: string;
+}) => {
+  const { data, error } = await supabase
+    .from('app_user')
+    .insert(member)
+    .select()
+    .single();
+  
+  if (error) {
+    console.error('Error adding team member:', error);
+    throw new Error(error.message);
+  }
+
+  return data;
+};
+
+/**
+ * Updates an existing team member
+ */
+export const updateTeamMember = async (id: string, updates: {
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  role?: string;
+}) => {
+  const { data, error } = await supabase
+    .from('app_user')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+  
+  if (error) {
+    console.error('Error updating team member:', error);
+    throw new Error(error.message);
+  }
+
+  return data;
+};
+
+/**
+ * Removes a team member
+ */
+export const removeTeamMember = async (id: string) => {
+  const { error } = await supabase
+    .from('app_user')
+    .delete()
+    .eq('id', id);
+  
+  if (error) {
+    console.error('Error removing team member:', error);
+    throw new Error(error.message);
+  }
+
+  return true;
+};
+
+/**
+ * Gets user activity logs
+ */
+export const getUserActivity = async (limit = 10) => {
+  const { data, error } = await supabase
+    .from('user_activity')
+    .select('*, app_user!user_activity_user_id_fkey(*)')
+    .order('occurred_at', { ascending: false })
+    .limit(limit);
+  
+  if (error) {
+    console.error('Error fetching user activity:', error);
+    throw new Error(error.message);
+  }
+
+  return data || [];
+};
+
+/**
+ * Records a user activity
+ */
+export const recordUserActivity = async (activity: {
+  user_id: string;
+  activity_type: string;
+  activity_detail?: any;
+}) => {
+  const { data, error } = await supabase
+    .from('user_activity')
+    .insert(activity)
+    .select()
+    .single();
+  
+  if (error) {
+    console.error('Error recording user activity:', error);
+    throw new Error(error.message);
+  }
+
+  return data;
 };
 
 /**

@@ -1,205 +1,90 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getMockProspects } from '@/services/mockDataService';
+import { getProspects, SalesTracking } from '@/services/supabaseService';
 import { format } from 'date-fns';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Activity, Calendar, Search } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Link, useNavigate } from 'react-router-dom';
 
 const EmailCommunicationHistory = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedEmail, setSelectedEmail] = useState<any>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  
-  // Fetch clients data using React Query
-  const { data: clients = [], isLoading } = useQuery({
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
+  const [communications, setCommunications] = useState<SalesTracking[]>([]);
+
+  const { data: prospects } = useQuery({
     queryKey: ['prospects'],
-    queryFn: getMockProspects,
+    queryFn: getProspects,
   });
 
-  // Flatten communications from all clients
-  const allCommunications = clients.flatMap(client => 
-    client.communications.map(comm => ({
-      ...comm,
-      clientName: `${client.first_name} ${client.last_name}`,
-      clientEmail: client.email,
-      clientId: client.id,
-      // Add a default activity_type for all communications
-      activity_type: 'Email'
-    }))
-  );
+  useEffect(() => {
+    if (prospects) {
+      // Collect all communications from all prospects and flatten into a single array
+      const allCommunications = prospects.flatMap(p => p.communications || []);
+      // Sort by date, newest first
+      const sorted = [...allCommunications].sort((a, b) => 
+        new Date(b.date_of_communication).getTime() - new Date(a.date_of_communication).getTime()
+      );
+      
+      setCommunications(sorted);
+      setIsLoading(false);
+    }
+  }, [prospects]);
 
-  // Sort by date (newest first)
-  const sortedCommunications = [...allCommunications].sort((a, b) => 
-    new Date(b.date_of_communication).getTime() - new Date(a.date_of_communication).getTime()
-  );
-
-  // Filter communications based on search term
-  const filteredCommunications = sortedCommunications.filter(comm => 
-    comm.subject_text.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    comm.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    comm.clientEmail.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const handleEmailClick = (communication: any) => {
-    setSelectedEmail(communication);
-    setIsDialogOpen(true);
-  };
+  if (isLoading) {
+    return <div className="p-8">Loading email history...</div>;
+  }
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold">Email Communication History</h1>
+      <div className="mb-6 flex items-center">
+        <Button variant="ghost" onClick={() => navigate(-1)} className="mr-4">
+          <ArrowLeft size={16} className="mr-2" />
+          Back
+        </Button>
+        <h1 className="text-2xl font-bold">Email Communication History</h1>
       </div>
-
-      <div className="card mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-3.5 text-white/50" size={18} />
-          <Input
-            type="text"
-            placeholder="Search communications..."
-            className="w-full px-4 py-3 pl-10 bg-white/5 border border-white/20 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-crm-accent/50"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-      </div>
-
-      <Card className="bg-black text-white border border-white/10">
-        <CardHeader className="border-b border-white/10">
-          <CardTitle className="text-xl font-bold text-white">All Communications</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {isLoading ? (
-            <div className="text-center py-10">
-              <p className="text-white/70">Loading communications...</p>
-            </div>
-          ) : filteredCommunications.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-b border-white/20">
-                    <TableHead className="text-left py-4 px-4 font-medium text-white">Client</TableHead>
-                    <TableHead className="text-left py-4 px-4 font-medium text-white">Subject</TableHead>
-                    <TableHead className="text-left py-4 px-4 font-medium text-white">
-                      <div className="flex items-center gap-2">
-                        <Activity size={16} />
-                        <span>Activity</span>
-                      </div>
-                    </TableHead>
-                    <TableHead className="text-left py-4 px-4 font-medium text-white">
-                      <div className="flex items-center gap-2">
-                        <Calendar size={16} />
-                        <span>Date</span>
-                      </div>
-                    </TableHead>
-                    <TableHead className="text-right py-4 px-4 font-medium text-white">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredCommunications.map((comm, index) => (
-                    <TableRow 
-                      key={index} 
-                      className="border-b border-white/10 hover:bg-white/5 transition-colors cursor-pointer"
-                      onClick={() => handleEmailClick(comm)}
-                    >
-                      <TableCell className="py-4 px-4">
-                        <div>
-                          <p className="font-medium">{comm.clientName}</p>
-                          <p className="text-sm text-white/70">{comm.clientEmail}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell className="py-4 px-4">{comm.subject_text}</TableCell>
-                      <TableCell className="py-4 px-4">
-                        <div className="flex items-center">
-                          <span className={`w-2.5 h-2.5 rounded-full bg-crm-accent mr-2`}></span>
-                          <span>{comm.activity_type}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="py-4 px-4">
-                        {format(new Date(comm.date_of_communication), 'MMM d, yyyy')}
-                      </TableCell>
-                      <TableCell className="py-4 px-4 text-right">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          className="border-white/20 text-white hover:bg-white/10"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            window.open(`/clients/${comm.clientId}`, '_blank');
-                          }}
-                        >
-                          View Client
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          ) : (
-            <div className="text-center py-10">
-              <p className="text-white/70">No communications found matching your search.</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Email Detail Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-black/90 backdrop-blur-md border border-white/20 text-white max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-white">Email Details</DialogTitle>
-          </DialogHeader>
-          
-          {selectedEmail && (
-            <div className="space-y-4">
-              <div className="border-b border-white/10 pb-3">
-                <p className="text-sm text-white/70">From</p>
-                <p className="font-medium">{selectedEmail.salesperson_email}</p>
-              </div>
-              
-              <div className="border-b border-white/10 pb-3">
-                <p className="text-sm text-white/70">To</p>
-                <p className="font-medium">{selectedEmail.clientEmail}</p>
-              </div>
-              
-              <div className="border-b border-white/10 pb-3">
-                <p className="text-sm text-white/70">Subject</p>
-                <p className="font-medium">{selectedEmail.subject_text}</p>
-              </div>
-              
-              <div className="border-b border-white/10 pb-3">
-                <p className="text-sm text-white/70">Date</p>
-                <p className="font-medium">
-                  {format(new Date(selectedEmail.date_of_communication), 'MMMM d, yyyy - h:mm a')}
+      
+      <div className="space-y-6">
+        {communications.length > 0 ? communications.map((comm, index) => (
+          <div key={index} className="p-6 card">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h2 className="text-xl font-semibold mb-1">{comm.subject_text}</h2>
+                <p className="text-white/70">
+                  To: {comm.prospect_first_name} {comm.prospect_last_name}
+                </p>
+                <p className="text-white/70 text-sm">
+                  From: {comm.salesperson_email}
                 </p>
               </div>
-              
-              <div className="pt-2 whitespace-pre-wrap">
-                <p className="text-sm text-white/70">Message</p>
-                <div className="mt-2 bg-white/5 p-4 rounded-md">
-                  {selectedEmail.body_text}
-                </div>
-              </div>
-
-              <div className="flex justify-end pt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => setIsDialogOpen(false)}
-                  className="border-white/20 text-white hover:bg-white/10"
-                >
-                  Close
-                </Button>
+              <div className="text-white/50 text-sm">
+                {format(new Date(comm.date_of_communication), 'PPP')}
               </div>
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+            
+            <div className="border-t border-white/10 pt-4 mt-2">
+              <p className="whitespace-pre-line">{comm.body_text || 'No content available'}</p>
+            </div>
+            
+            <div className="mt-4 text-right">
+              <Link to={`/clients/${comm.prospect_id}`}>
+                <Button variant="outline" size="sm">
+                  View Client
+                </Button>
+              </Link>
+            </div>
+          </div>
+        )) : (
+          <div className="text-center py-10 card">
+            <p className="text-xl font-semibold mb-4">No email communications found</p>
+            <p className="text-white/70 mb-6">Start communicating with prospects to see your history here.</p>
+            <Button onClick={() => navigate('/clients')}>
+              View Clients
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

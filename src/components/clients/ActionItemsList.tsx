@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ActionItem } from '@/services/mockAiService';
+import { ActionItem } from '@/services/supabaseService';
 import { format, parseISO } from 'date-fns';
 import { CheckCircle, Clock, AlertCircle } from 'lucide-react';
 

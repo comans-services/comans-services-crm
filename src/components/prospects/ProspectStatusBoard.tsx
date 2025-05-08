@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { DragDropContext } from '@hello-pangea/dnd';
-import { ProspectWithEngagement } from '@/services/mockDataService';
+import { ProspectWithEngagement } from '@/services/supabaseService';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 import StatusColumn from './StatusColumn';
@@ -104,7 +103,7 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
     return columns;
   };
   
-  const [columns, setColumns] = useState<StatusColumn[]>(distributeProspects(prospects));
+  const [columns, setColumns] = useState<StatusColumn[]>([]); // Initialize with empty array
   
   // Update columns when prospects change
   useEffect(() => {

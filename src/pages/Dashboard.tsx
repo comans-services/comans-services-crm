@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Users, Mail, Calendar, TrendingUp, Bell, ArrowRight, CheckCircle } from 'lucide-react';
-import { getMockProspects, ProspectWithEngagement } from '../services/mockDataService';
+import { getProspects, ProspectWithEngagement } from '../services/supabaseService';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
@@ -43,7 +43,7 @@ const Dashboard = () => {
   // Fetch prospects using React Query
   const { data: prospects = [], isLoading, error } = useQuery({
     queryKey: ['prospects'],
-    queryFn: getMockProspects,
+    queryFn: getProspects,
   });
 
   // Handle "Add Client" button click
