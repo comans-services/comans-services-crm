@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -50,7 +49,12 @@ export interface Task {
   completed: boolean;
   created_at: string;
   updated_at: string;
-  prospect_profile?: ProspectProfile;
+  prospect_profile?: {
+    first_name: string;
+    last_name: string;
+    email: string;
+    company: string | null;
+  };
 }
 
 /**
@@ -281,7 +285,14 @@ export const fetchTasks = async (): Promise<Task[]> => {
       return [];
     }
     
-    return data || [];
+    // Ensure type safety by explicitly casting priority and task_type
+    const typeSafeTasks = data.map(task => ({
+      ...task,
+      priority: task.priority as 'high' | 'medium' | 'low',
+      task_type: task.task_type as 'follow-up' | 'check-in' | 'meeting' | 'other'
+    }));
+    
+    return typeSafeTasks;
   } catch (error) {
     console.error("Error in fetchTasks:", error);
     return [];
@@ -304,7 +315,14 @@ export const fetchProspectTasks = async (prospectId: string): Promise<Task[]> =>
       return [];
     }
     
-    return data || [];
+    // Ensure type safety by explicitly casting priority and task_type
+    const typeSafeTasks = data.map(task => ({
+      ...task,
+      priority: task.priority as 'high' | 'medium' | 'low',
+      task_type: task.task_type as 'follow-up' | 'check-in' | 'meeting' | 'other'
+    }));
+    
+    return typeSafeTasks;
   } catch (error) {
     console.error("Error in fetchProspectTasks:", error);
     return [];

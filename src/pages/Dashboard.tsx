@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Users, Mail, Calendar, TrendingUp, Bell, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
@@ -6,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchProspects, fetchAllCommunications, fetchTasks, toggleTaskCompletion } from '@/services/supabaseService';
 
 const StatCard = ({ title, value, icon, color }: { title: string; value: string | number; icon: React.ReactNode; color: string }) => (
