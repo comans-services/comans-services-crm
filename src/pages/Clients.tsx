@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit, MoreVertical, Users, Building } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchProspects, getProspectsByCompany, getStatusColor } from '@/services/supabaseService';
 import { 
   Tabs, 
@@ -11,11 +11,14 @@ import {
   TabsTrigger 
 } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const Clients = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentTab, setCurrentTab] = useState('all');
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   // Fetch clients data using React Query
   const { data: clients = [], isLoading: isLoadingClients } = useQuery({
@@ -28,6 +31,41 @@ const Clients = () => {
     queryKey: ['companies'],
     queryFn: getProspectsByCompany,
   });
+
+  // Set up real-time subscription to prospect_profile table
+  useEffect(() => {
+    const channel = supabase
+      .channel('prospect-changes')
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'prospect_profile' 
+        },
+        (payload) => {
+          console.log('Real-time update received:', payload);
+          // Invalidate queries to refetch data
+          queryClient.invalidateQueries({ queryKey: ['prospects'] });
+          queryClient.invalidateQueries({ queryKey: ['companies'] });
+          
+          // Show toast notification based on the event type
+          if (payload.eventType === 'INSERT') {
+            toast.success('New client added');
+          } else if (payload.eventType === 'UPDATE') {
+            toast.success('Client information updated');
+          } else if (payload.eventType === 'DELETE') {
+            toast.info('Client removed');
+          }
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription when component unmounts
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const filteredClients = clients.filter(client => 
     client.first_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
