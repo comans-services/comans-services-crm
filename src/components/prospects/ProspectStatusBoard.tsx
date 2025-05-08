@@ -41,7 +41,7 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
       } catch (error) {
         console.error("Error loading engagement stages:", error);
         
-        // Fallback to hardcoded columns
+        // Fallback to hardcoded columns if database fetch fails
         const fallbackColumns: StatusColumn[] = [
           { id: 'new-lead', title: 'New Lead', prospects: [] },
           { id: 'contacted', title: 'Contacted', prospects: [] },
