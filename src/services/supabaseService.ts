@@ -25,6 +25,11 @@ export interface Prospect {
   /* UI-only helpers (not in DB) */
   dragId?: string;
   daysSinceLastContact?: number | null;
+  
+  /* Nested relationship data */
+  prospect_engagement?: {
+    last_contact_date: string | null;
+  }[];
 }
 
 export interface DealStage {
