@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { DragDropContext } from '@hello-pangea/dnd';
 import { ProspectWithEngagement, getEngagementStages, updateProspectEngagementStage } from '@/services/supabaseService';
 import { toast } from 'sonner';
-import { v4 as uuidv4 } from 'uuid';
 import StatusColumn from './StatusColumn';
 
 interface ProspectStatusBoardProps {
