@@ -1,13 +1,23 @@
 
 import React from 'react';
 import { Droppable } from '@hello-pangea/dnd';
-import { ProspectWithEngagement } from '@/services/mockDataService';
 import ProspectCard from './ProspectCard';
+
+// Define the prospect interface for consistency
+interface Prospect {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  company: string | null;
+  dragId?: string;
+  daysSinceLastContact?: number | null;
+}
 
 interface StatusColumnProps {
   id: string;
   title: string;
-  prospects: ProspectWithEngagement[];
+  prospects: Prospect[];
 }
 
 const StatusColumn: React.FC<StatusColumnProps> = ({ id, title, prospects }) => {

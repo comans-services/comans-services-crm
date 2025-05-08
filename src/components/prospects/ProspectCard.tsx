@@ -1,11 +1,20 @@
 
 import React from 'react';
 import { Draggable } from '@hello-pangea/dnd';
-import { ProspectWithEngagement } from '@/services/mockDataService';
 import { getStatusColor } from '@/utils/clientUtils';
 
+// Define the prospect interface for consistency
+interface Prospect {
+  id: string;
+  first_name: string;
+  last_name: string;
+  company: string | null;
+  dragId?: string;
+  daysSinceLastContact?: number | null;
+}
+
 interface ProspectCardProps {
-  prospect: ProspectWithEngagement;
+  prospect: Prospect;
   index: number;
 }
 
@@ -65,11 +74,11 @@ const ProspectCard: React.FC<ProspectCardProps> = ({ prospect, index }) => {
               {prospect.first_name} {prospect.last_name}
             </div>
             <div className="text-xs text-white/60 mt-1">
-              {prospect.company}
+              {prospect.company || 'No company'}
             </div>
             <div className="mt-2 flex justify-between items-center text-xs">
               <div className="bg-white/10 rounded px-2 py-0.5">
-                {prospect.daysSinceLastContact !== null 
+                {prospect.daysSinceLastContact !== null && prospect.daysSinceLastContact !== undefined
                   ? `${prospect.daysSinceLastContact} days ago` 
                   : 'New lead'}
               </div>

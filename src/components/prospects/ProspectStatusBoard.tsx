@@ -1,27 +1,44 @@
 
 import React, { useState, useEffect } from 'react';
 import { DragDropContext } from '@hello-pangea/dnd';
-import { ProspectWithEngagement } from '@/services/mockDataService';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 import StatusColumn from './StatusColumn';
 import { DealStage, fetchDealStages, updateProspectDealStage } from '@/services/supabaseService';
+import { supabase } from '@/integrations/supabase/client';
+
+// Define interface for Prospect from database
+interface Prospect {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  company: string | null;
+  phone: string | null;
+  deal_stage_id: string | null;
+  // Add a dragId property for drag and drop functionality
+  dragId?: string;
+  // Add a derived property for days since last contact
+  daysSinceLastContact?: number | null;
+}
 
 interface ProspectStatusBoardProps {
-  prospects: ProspectWithEngagement[];
+  prospects: any[];
   isLoading: boolean;
 }
 
 type StatusColumn = {
   id: string;
   title: string;
-  prospects: ProspectWithEngagement[];
+  prospects: Prospect[];
 }
 
 const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, isLoading }) => {
   const [dealStages, setDealStages] = useState<DealStage[]>([]);
   const [columns, setColumns] = useState<StatusColumn[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [dbProspects, setDbProspects] = useState<Prospect[]>([]);
+  const [isLoadingProspects, setIsLoadingProspects] = useState(true);
   
   // Load deal stages from database
   useEffect(() => {
@@ -43,21 +60,63 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
     loadDealStages();
   }, []);
   
-  // Ensure each prospect has a unique draggable ID
-  const ensureUniqueIds = (prospects: ProspectWithEngagement[]): ProspectWithEngagement[] => {
-    return prospects.map(prospect => {
-      if (prospect.id.startsWith('prospect-')) {
-        return { ...prospect, dragId: `drag-${uuidv4()}` };
-      }
-      return { ...prospect, dragId: `drag-${prospect.id}` };
-    });
-  };
-
-  // Distribute prospects among deal stages when they're loaded
+  // Fetch prospects from the database
   useEffect(() => {
-    if (!isLoaded || prospects.length === 0 || dealStages.length === 0) return;
+    const fetchProspects = async () => {
+      setIsLoadingProspects(true);
+      
+      try {
+        // Fetch prospects and their last contact date
+        const { data: prospectData, error } = await supabase
+          .from('prospect_profile')
+          .select(`
+            *,
+            prospect_engagement(last_contact_date)
+          `);
+          
+        if (error) {
+          console.error("Error fetching prospects:", error);
+          toast.error("Failed to load prospects");
+          return;
+        }
+        
+        // Process prospects to add dragId and calculate days since last contact
+        const processedProspects = prospectData.map(prospect => {
+          // Extract last contact date from engagement if available
+          const lastContactDate = prospect.prospect_engagement && 
+            prospect.prospect_engagement[0]?.last_contact_date;
+          
+          // Calculate days since last contact
+          let daysSinceLastContact = null;
+          if (lastContactDate) {
+            const diffTime = Date.now() - new Date(lastContactDate).getTime();
+            daysSinceLastContact = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          }
+          
+          return {
+            ...prospect,
+            dragId: `drag-${prospect.id}`,
+            daysSinceLastContact
+          };
+        });
+        
+        setDbProspects(processedProspects);
+      } catch (error) {
+        console.error("Error in fetchProspects:", error);
+      } finally {
+        setIsLoadingProspects(false);
+      }
+    };
     
-    const uniqueProspects = ensureUniqueIds(prospects);
+    if (isLoaded) {
+      fetchProspects();
+    }
+  }, [isLoaded]);
+  
+  // Distribute prospects among deal stages
+  useEffect(() => {
+    if (!isLoaded || dealStages.length === 0) return;
+    
     const newColumns = [...columns];
     
     // Clear all columns first
@@ -66,8 +125,7 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
     });
     
     // Distribute prospects to appropriate columns
-    uniqueProspects.forEach(prospect => {
-      // For demo/mock data that might not have deal_stage_id, use a default distribution
+    dbProspects.forEach(prospect => {
       let columnId = prospect.deal_stage_id || dealStages[0]?.id;
       
       const column = newColumns.find(col => col.id === columnId);
@@ -80,7 +138,7 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
     });
     
     setColumns(newColumns);
-  }, [prospects, isLoaded, dealStages]);
+  }, [dbProspects, isLoaded, dealStages]);
   
   const handleDragEnd = async (result: any) => {
     const { destination, source, draggableId } = result;
@@ -122,7 +180,7 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
     await updateProspectDealStage(prospectId, dealStageId);
   };
   
-  if (isLoading || !isLoaded) {
+  if (isLoading || !isLoaded || isLoadingProspects) {
     return <div className="card p-8 text-center">Loading prospects...</div>;
   }
   

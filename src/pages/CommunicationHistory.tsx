@@ -1,14 +1,12 @@
 
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getMockProspects } from '@/services/mockDataService';
 import ProspectStatusBoard from '@/components/prospects/ProspectStatusBoard';
 
 const CommunicationHistory = () => {
-  const { data: prospects = [], isLoading } = useQuery({
-    queryKey: ['prospects'],
-    queryFn: getMockProspects,
-  });
+  // We will pass empty array as default prospects and let the component fetch them
+  const prospects = [];
+  const isLoading = false;
 
   return (
     <div className="flex flex-col h-full">
