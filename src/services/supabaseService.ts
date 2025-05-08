@@ -9,6 +9,31 @@ export interface DealStage {
   created_at: string;
 }
 
+export interface ProspectProfile {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  company: string | null;
+  phone: string | null;
+  deal_stage_id: string | null;
+  created_at: string;
+  updated_at: string;
+  client_since?: string;
+  daysSinceLastContact?: number | null;
+}
+
+export interface Communication {
+  id: string;
+  prospect_id: string;
+  salesperson_email: string;
+  subject_text: string;
+  body_text: string | null;
+  date_of_communication: string;
+  created_at: string;
+  updated_at: string;
+}
+
 /**
  * Fetch all deal stages from the database
  */
@@ -59,7 +84,7 @@ export const updateProspectDealStage = async (prospectId: string, dealStageId: s
 /**
  * Fetch all prospects with their last contact date
  */
-export const fetchProspects = async () => {
+export const fetchProspects = async (): Promise<ProspectProfile[]> => {
   try {
     const { data: prospectData, error } = await supabase
       .from('prospect_profile')
@@ -102,9 +127,49 @@ export const fetchProspects = async () => {
 };
 
 /**
+ * Fetch a single prospect by ID with all related data
+ */
+export const fetchProspectById = async (id: string): Promise<ProspectProfile | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('prospect_profile')
+      .select(`
+        *,
+        prospect_engagement(last_contact_date)
+      `)
+      .eq('id', id)
+      .single();
+    
+    if (error) {
+      console.error("Error fetching prospect:", error);
+      toast.error('Failed to load prospect details');
+      return null;
+    }
+    
+    // Calculate days since last contact
+    const lastContactDate = data.prospect_engagement && 
+      data.prospect_engagement[0]?.last_contact_date;
+    
+    let daysSinceLastContact = null;
+    if (lastContactDate) {
+      const diffTime = Date.now() - new Date(lastContactDate).getTime();
+      daysSinceLastContact = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
+    
+    return {
+      ...data,
+      daysSinceLastContact
+    };
+  } catch (error) {
+    console.error("Error in fetchProspectById:", error);
+    return null;
+  }
+};
+
+/**
  * Fetch communications for a prospect
  */
-export const fetchProspectCommunications = async (prospectId: string) => {
+export const fetchProspectCommunications = async (prospectId: string): Promise<Communication[]> => {
   try {
     const { data, error } = await supabase
       .from('sales_tracking')
@@ -120,6 +185,32 @@ export const fetchProspectCommunications = async (prospectId: string) => {
     return data || [];
   } catch (error) {
     console.error("Error in fetchProspectCommunications:", error);
+    return [];
+  }
+};
+
+/**
+ * Fetch all communications
+ */
+export const fetchAllCommunications = async (): Promise<Communication[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('sales_tracking')
+      .select(`
+        *,
+        prospect_profile!sales_tracking_prospect_id_fkey(first_name, last_name, email)
+      `)
+      .order('date_of_communication', { ascending: false });
+    
+    if (error) {
+      console.error("Error fetching communications:", error);
+      toast.error('Failed to load communications');
+      return [];
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error("Error in fetchAllCommunications:", error);
     return [];
   }
 };
@@ -149,5 +240,66 @@ export const createProspectCommunication = async (communicationData: {
   } catch (error) {
     console.error("Error in createProspectCommunication:", error);
     return false;
+  }
+};
+
+/**
+ * Get status color based on days since last contact
+ */
+export const getStatusColor = (daysSinceLastContact: number | null): string => {
+  if (daysSinceLastContact === null) {
+    return 'gray-400';
+  }
+  if (daysSinceLastContact <= 2) {
+    return 'green-500';
+  }
+  if (daysSinceLastContact <= 5) {
+    return 'yellow-500';
+  }
+  if (daysSinceLastContact <= 10) {
+    return 'orange-500';
+  }
+  return 'red-500';
+};
+
+/**
+ * Get recommended action based on days since last contact
+ */
+export const getRecommendedAction = (daysSinceLastContact: number | null): string => {
+  if (daysSinceLastContact === null) {
+    return 'Initial contact needed';
+  }
+  if (daysSinceLastContact <= 2) {
+    return 'Follow up next week';
+  }
+  if (daysSinceLastContact <= 5) {
+    return 'Follow up this week';
+  }
+  if (daysSinceLastContact <= 10) {
+    return 'Follow up today';
+  }
+  return 'Urgent follow up required';
+};
+
+/**
+ * Group prospects by company
+ */
+export const getProspectsByCompany = async (): Promise<Record<string, ProspectProfile[]>> => {
+  try {
+    const prospects = await fetchProspects();
+    const companiesMap: Record<string, ProspectProfile[]> = {};
+    
+    prospects.forEach(prospect => {
+      const company = prospect.company || 'Unknown';
+      if (!companiesMap[company]) {
+        companiesMap[company] = [];
+      }
+      companiesMap[company].push(prospect);
+    });
+    
+    return companiesMap;
+  } catch (error) {
+    console.error("Error in getProspectsByCompany:", error);
+    return {};
   }
 };
