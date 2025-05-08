@@ -330,7 +330,19 @@ export const recordCommunication = async (communication: {
     })
     .eq('prospect_id', communication.prospect_id);
 
-  return data;
+  // Get the prospect details to add to the return object
+  const { data: prospect } = await supabase
+    .from('prospect_profile')
+    .select('first_name, last_name')
+    .eq('id', communication.prospect_id)
+    .single();
+
+  // Return with the required fields for SalesTracking type
+  return {
+    ...data,
+    prospect_first_name: prospect?.first_name || '',
+    prospect_last_name: prospect?.last_name || ''
+  };
 };
 
 /**
