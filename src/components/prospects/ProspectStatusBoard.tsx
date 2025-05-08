@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { DragDropContext } from '@hello-pangea/dnd';
 import { toast } from 'sonner';
@@ -49,15 +50,30 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({
     });
 
     // Default column fallback (first stage)
-    const defaultStageId = dealStages[0].id;
+    const defaultStageId = dealStages[0]?.id;
 
     // Slot each prospect into its stage column
     prospects.forEach((prospect) => {
       const targetId = prospect.deal_stage_id ?? defaultStageId;
-      (stageMap[targetId] ?? stageMap[defaultStageId]).prospects.push(prospect);
+      const targetStage = stageMap[targetId];
+      
+      // Only add to a valid stage
+      if (targetStage) {
+        targetStage.prospects.push(prospect);
+      } else if (defaultStageId && stageMap[defaultStageId]) {
+        // Fallback to default stage if target stage doesn't exist
+        stageMap[defaultStageId].prospects.push(prospect);
+      }
     });
 
-    setColumns(Object.values(stageMap));
+    // Sort columns by sort_order from deal_stages
+    const sortedColumns = Object.values(stageMap).sort((a, b) => {
+      const stageA = dealStages.find(stage => stage.id === a.id);
+      const stageB = dealStages.find(stage => stage.id === b.id);
+      return (stageA?.sort_order || 0) - (stageB?.sort_order || 0);
+    });
+
+    setColumns(sortedColumns);
   }, [prospects, dealStages]);
 
   /** Handle drag-and-drop */
@@ -110,4 +126,3 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({
 };
 
 export default ProspectStatusBoard;
-

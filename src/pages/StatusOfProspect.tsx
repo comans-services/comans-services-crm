@@ -1,9 +1,11 @@
+
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import ProspectStatusBoard from '@/components/prospects/ProspectStatusBoard';
 import { fetchProspects, fetchDealStages } from '@/services/supabaseService';
+import { toast } from 'sonner';
 
-const CommunicationHistory: React.FC = () => {
+const StatusOfProspect: React.FC = () => {
   // Prospects
   const {
     data: prospects = [],
@@ -29,6 +31,7 @@ const CommunicationHistory: React.FC = () => {
   const error = prospectsError || dealStagesError;
 
   if (error) {
+    toast.error('Failed to load prospects data');
     return (
       <div className="p-8 text-red-500">
         Sorry – there was a problem loading your data.
@@ -54,5 +57,4 @@ const CommunicationHistory: React.FC = () => {
   );
 };
 
-export default CommunicationHistory;
-
+export default StatusOfProspect;
