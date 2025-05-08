@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { User, Edit, Trash2, Plus, Mail, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -28,6 +27,7 @@ import {
   updateTeamMember, 
   deleteTeamMember 
 } from '@/services/supabaseService';
+import ClientsError from '@/components/clients/ClientsError';
 
 // Mock activity log data
 const mockActivityLog = [
@@ -59,7 +59,7 @@ const TeamManagement = () => {
   const queryClient = useQueryClient();
 
   // Fetch team members data
-  const { data: teamMembers = [], isLoading } = useQuery({
+  const { data: teamMembers = [], isLoading, error } = useQuery({
     queryKey: ['teamMembers'],
     queryFn: fetchTeamMembers
   });
@@ -155,6 +155,11 @@ const TeamManagement = () => {
       return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
     }
   };
+
+  // Show error message if data fetching fails
+  if (error) {
+    return <ClientsError error={error as Error} queryKey={['teamMembers']} />;
+  }
 
   return (
     <div>
