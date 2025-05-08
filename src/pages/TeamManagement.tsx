@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { User, Edit, Trash2, Plus, Mail, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -26,9 +25,9 @@ import {
   createTeamMember, 
   updateTeamMember, 
   deleteTeamMember, 
-  getActivityLogs, 
-  setupRealTimeSubscription 
-} from '@/services/supabaseService';
+  getActivityLogs,
+  setupRealTimeSubscription
+} from '@/services/supabase';
 import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 
