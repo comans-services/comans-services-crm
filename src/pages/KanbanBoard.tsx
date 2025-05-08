@@ -2,14 +2,19 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { getProspects } from '@/services/supabaseService';
-import ProspectStatusBoard from '@/components/prospects/ProspectStatusBoard';
+import { getProspects, getDealStages } from '@/services/supabaseService';
+import ProspectDealBoard from '@/components/prospects/ProspectDealBoard';
 
 const KanbanBoard = () => {
   const navigate = useNavigate();
-  const { data: prospects = [], isLoading } = useQuery({
+  const { data: prospects = [], isLoading: isLoadingProspects } = useQuery({
     queryKey: ['prospects'],
     queryFn: getProspects,
+  });
+  
+  const { data: dealStages = [], isLoading: isLoadingStages } = useQuery({
+    queryKey: ['dealStages'],
+    queryFn: getDealStages,
   });
 
   const handleCreateLead = () => {
@@ -19,12 +24,13 @@ const KanbanBoard = () => {
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold">Prospect Board</h1>
+        <h1 className="text-3xl font-bold">Prospect Deal Board</h1>
       </div>
       
-      <ProspectStatusBoard 
+      <ProspectDealBoard 
         prospects={prospects} 
-        isLoading={isLoading}
+        dealStages={dealStages}
+        isLoading={isLoadingProspects || isLoadingStages}
         onCreateLead={handleCreateLead}
       />
     </div>

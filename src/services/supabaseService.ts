@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { format, subDays } from 'date-fns';
 
@@ -18,6 +17,7 @@ export interface ProspectWithEngagement {
   statusColor: string;
   recommendedAction: string;
   dragId?: string;
+  deal_stage_id?: string | null;
   engagement?: {
     id: string;
     prospect_id: string;
@@ -323,6 +323,33 @@ export const updateProspectEngagementStage = async (
     return true;
   } catch (error) {
     console.error("Error in updateProspectEngagementStage:", error);
+    return false;
+  }
+};
+
+// Update prospect's deal stage
+export const updateProspectDealStage = async (
+  prospectId: string,
+  dealStageId: string
+): Promise<boolean> => {
+  try {
+    // Update prospect's deal_stage_id
+    const { error: updateError } = await supabase
+      .from('prospect_profile')
+      .update({ 
+        deal_stage_id: dealStageId,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', prospectId);
+
+    if (updateError) {
+      console.error("Error updating deal stage:", updateError);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error in updateProspectDealStage:", error);
     return false;
   }
 };
