@@ -100,3 +100,54 @@ export const fetchProspects = async () => {
     return [];
   }
 };
+
+/**
+ * Fetch communications for a prospect
+ */
+export const fetchProspectCommunications = async (prospectId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('sales_tracking')
+      .select('*')
+      .eq('prospect_id', prospectId)
+      .order('date_of_communication', { ascending: false });
+    
+    if (error) {
+      console.error("Error fetching prospect communications:", error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error("Error in fetchProspectCommunications:", error);
+    return [];
+  }
+};
+
+/**
+ * Create a new prospect communication
+ */
+export const createProspectCommunication = async (communicationData: {
+  prospect_id: string;
+  subject_text: string;
+  body_text?: string;
+  salesperson_email: string;
+}) => {
+  try {
+    const { error } = await supabase
+      .from('sales_tracking')
+      .insert([communicationData]);
+    
+    if (error) {
+      console.error("Error creating prospect communication:", error);
+      toast.error('Failed to log communication');
+      return false;
+    }
+    
+    toast.success('Communication logged successfully');
+    return true;
+  } catch (error) {
+    console.error("Error in createProspectCommunication:", error);
+    return false;
+  }
+};

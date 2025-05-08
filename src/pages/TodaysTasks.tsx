@@ -1,11 +1,11 @@
 
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getMockProspects, ProspectWithEngagement } from '@/services/mockDataService';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, CheckCircle } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
+import { fetchProspects } from '@/services/supabaseService';
 
 // Priority indicator component
 const PriorityIndicator = ({ priority }: { priority: 'high' | 'medium' | 'low' }) => {
@@ -29,11 +29,11 @@ const TodaysTasks = () => {
   // Fetch prospects using React Query
   const { data: prospects = [], isLoading, error } = useQuery({
     queryKey: ['prospects'],
-    queryFn: getMockProspects,
+    queryFn: fetchProspects,
   });
 
   // Generate prioritized to-do list for today
-  const generatePrioritizedTasks = (prospects: ProspectWithEngagement[]) => {
+  const generatePrioritizedTasks = (prospects: any[]) => {
     const tasks = [];
     
     // Add urgent follow-ups as high priority
@@ -56,7 +56,7 @@ const TodaysTasks = () => {
         type: 'follow-up',
         prospect,
         priority: 'medium' as const,
-        description: `Follow up with ${prospect.first_name} ${prospect.last_name} from ${prospect.company}`
+        description: `Follow up with ${prospect.first_name} ${prospect.last_name} from ${prospect.company || 'Unknown Company'}`
       });
     }
     
@@ -140,7 +140,7 @@ const TodaysTasks = () => {
                 </div>
                 
                 <div className="text-right">
-                  <p className="text-sm text-white/70">{task.prospect.company}</p>
+                  <p className="text-sm text-white/70">{task.prospect.company || 'No company'}</p>
                   <p className="text-xs text-white/50">
                     {task.prospect.daysSinceLastContact} days ago
                   </p>
@@ -191,7 +191,7 @@ const TodaysTasks = () => {
             <Button 
               variant="outline" 
               className="w-full justify-between text-white border-white/20"
-              onClick={() => navigate('/communications')}
+              onClick={() => navigate('/prospect-status')}
             >
               View Prospect Status <ArrowRight size={16} />
             </Button>
