@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { Plus } from 'lucide-react';
 
 const CommunicationHistory = () => {
   const { data: prospects = [], isLoading, refetch } = useQuery({
@@ -54,10 +55,18 @@ const CommunicationHistory = () => {
   return (
     <div className="flex flex-col h-full">
       <div className="pb-4">
-        <h1 className="text-3xl font-bold mb-8">Status of Prospects</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold">Status of Prospects</h1>
+          <Button 
+            onClick={() => setIsNewLeadDialogOpen(true)}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            <Plus className="mr-1" size={16} />
+            Create Lead
+          </Button>
+        </div>
         
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold mb-4">Prospect Status Board</h2>
+        <div className="card bg-black/40 backdrop-blur-sm border border-white/10 p-4">
           <ProspectStatusBoard 
             prospects={prospects} 
             isLoading={isLoading} 

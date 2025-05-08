@@ -39,7 +39,7 @@ const ProspectDealBoard: React.FC<ProspectDealBoardProps> = ({
       // Create initial columns based on stages
       const initialColumns: DealStageColumn[] = sortedDealStages.map((stage) => ({
         id: stage.id,
-        title: stage.name,
+        title: stage.name.toUpperCase(),
         prospects: []
       }));
       
@@ -167,6 +167,7 @@ const ProspectDealBoard: React.FC<ProspectDealBoardProps> = ({
               id={column.id}
               title={column.title}
               prospects={column.prospects}
+              count={column.prospects.length}
               onCreateLead={column.id === columns[0]?.id ? onCreateLead : undefined}
             />
           ))}

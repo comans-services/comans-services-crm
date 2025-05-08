@@ -2,6 +2,7 @@
 import React from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import { ProspectWithEngagement } from '@/services/supabaseService';
+import { User } from 'lucide-react';
 
 interface ProspectCardProps {
   prospect: ProspectWithEngagement;
@@ -9,32 +10,9 @@ interface ProspectCardProps {
 }
 
 const ProspectCard: React.FC<ProspectCardProps> = ({ prospect, index }) => {
-  // Improved function to get perfect cursor alignment during drag
-  const getItemStyle = (isDragging: boolean, draggableStyle: any) => ({
-    // Base styles
-    userSelect: 'none' as const,
-    margin: '0 0 8px 0',
-    
-    // Visual feedback when dragging
-    background: isDragging ? 'rgba(59, 130, 246, 0.6)' : 'rgba(255, 255, 255, 0.05)',
-    borderColor: isDragging ? 'rgb(59, 130, 246)' : 'rgba(255, 255, 255, 0.1)',
-    boxShadow: isDragging ? '0 10px 15px rgba(0, 0, 0, 0.4)' : 'none',
-    
-    // Apply draggable styles but with better cursor alignment
-    ...draggableStyle,
-    
-    // Critical fix for cursor alignment: use fixed positioning and remove transforms that aren't needed
-    ...(isDragging && {
-      position: 'fixed',
-      top: 'auto',  // Let the drag system control the positioning
-      left: 'auto', // Let the drag system control the positioning
-      margin: 0,    // Remove margin during drag
-      transformOrigin: 'top left',
-      transition: 'none',  // Disable transitions during drag for better responsiveness
-      zIndex: 9999, // Ensure dragged item is above everything else
-    })
-  });
-
+  // Generate a code-like ID from the prospect information
+  const codeId = `COM-${prospect.id.substring(0, 2)}${index + 1}`;
+  
   return (
     <Draggable 
       key={prospect.dragId || prospect.id} 
@@ -46,30 +24,39 @@ const ProspectCard: React.FC<ProspectCardProps> = ({ prospect, index }) => {
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          style={getItemStyle(
-            snapshot.isDragging,
-            provided.draggableProps.style
-          )}
-          className={`mb-2 p-3 rounded-md border ${
+          className={`rounded-md ${
             snapshot.isDragging 
-              ? 'border-blue-500 shadow-lg' 
-              : 'border-white/10 transition-all'
-          }`}
+              ? 'bg-white/10 shadow-lg border border-blue-500/50' 
+              : 'bg-black/40 border border-white/10 hover:border-white/30'
+          } transition-all`}
         >
-          <div className="cursor-move">
-            <div className="text-sm font-medium">
-              {prospect.first_name} {prospect.last_name}
+          <div className="p-3">
+            <div className="text-sm font-medium mb-2">
+              {prospect.company || 'Unknown Company'}
             </div>
-            <div className="text-xs text-white/60 mt-1">
-              {prospect.company}
-            </div>
-            <div className="mt-2 flex justify-between items-center text-xs">
-              <div className="bg-white/10 rounded px-2 py-0.5">
-                {prospect.daysSinceLastContact !== null 
-                  ? `${prospect.daysSinceLastContact} days ago` 
-                  : 'New lead'}
+            
+            <div className="flex items-center mb-3">
+              <div className="bg-blue-500/20 text-blue-300 text-xs px-2 py-0.5 rounded flex items-center">
+                <span>{codeId}</span>
               </div>
-              <div className={`w-2 h-2 rounded-full bg-${prospect.statusColor}`}></div>
+              {prospect.daysSinceLastContact !== null && (
+                <div className="ml-auto text-xs text-white/50">
+                  {prospect.daysSinceLastContact}d
+                </div>
+              )}
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="text-xs text-white/70 flex items-center">
+                {prospect.first_name} {prospect.last_name}
+              </div>
+              
+              <div className="flex items-center">
+                <div className={`w-2 h-2 rounded-full bg-${prospect.statusColor}`}></div>
+                <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-xs text-white font-medium ml-2">
+                  JC
+                </div>
+              </div>
             </div>
           </div>
         </div>
