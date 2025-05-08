@@ -351,10 +351,102 @@ export const recordCommunication = async (communication: {
 export const getTeamMembers = async () => {
   const { data, error } = await supabase
     .from('app_user')
-    .select('*');
+    .select('*')
+    .order('last_active', { ascending: false });
   
   if (error) {
     console.error('Error fetching team members:', error);
+    throw new Error(error.message);
+  }
+
+  return data || [];
+};
+
+/**
+ * Creates a new team member
+ */
+export const createTeamMember = async (member: {
+  first_name: string;
+  last_name: string;
+  email: string;
+  role: 'Admin' | 'Salesperson';
+}) => {
+  const { data, error } = await supabase
+    .from('app_user')
+    .insert({
+      first_name: member.first_name,
+      last_name: member.last_name,
+      email: member.email,
+      role: member.role
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating team member:', error);
+    throw new Error(error.message);
+  }
+
+  return data;
+};
+
+/**
+ * Updates an existing team member
+ */
+export const updateTeamMember = async (id: string, member: {
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  role?: 'Admin' | 'Salesperson';
+}) => {
+  const { data, error } = await supabase
+    .from('app_user')
+    .update(member)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating team member:', error);
+    throw new Error(error.message);
+  }
+
+  return data;
+};
+
+/**
+ * Deletes a team member
+ */
+export const deleteTeamMember = async (id: string) => {
+  const { error } = await supabase
+    .from('app_user')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting team member:', error);
+    throw new Error(error.message);
+  }
+};
+
+/**
+ * Fetches activity logs (sales_tracking)
+ */
+export const getActivityLogs = async (limit: number = 10) => {
+  const { data, error } = await supabase
+    .from('sales_tracking')
+    .select(`
+      *,
+      prospect:prospect_id (
+        first_name,
+        last_name
+      )
+    `)
+    .order('date_of_communication', { ascending: false })
+    .limit(limit);
+  
+  if (error) {
+    console.error('Error fetching activity logs:', error);
     throw new Error(error.message);
   }
 
@@ -376,8 +468,7 @@ export const setupRealTimeSubscription = (
       {
         event: event,
         schema: 'public',
-        table: table,
-        type: 'postgres_changes'
+        table: table
       },
       (payload) => {
         callback(payload);
