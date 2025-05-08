@@ -57,6 +57,17 @@ export interface Task {
   };
 }
 
+export interface AppUser {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  role: 'admin' | 'salesperson';
+  last_active: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 /**
  * Fetch all deal stages from the database
  */
@@ -378,6 +389,110 @@ export const createTask = async (taskData: {
     return true;
   } catch (error) {
     console.error("Error in createTask:", error);
+    return false;
+  }
+};
+
+/**
+ * Fetch all team members from the app_user table
+ */
+export const fetchTeamMembers = async (): Promise<AppUser[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('app_user')
+      .select('*')
+      .order('last_name');
+    
+    if (error) {
+      console.error("Error fetching team members:", error);
+      toast.error('Failed to load team members');
+      return [];
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error("Error in fetchTeamMembers:", error);
+    return [];
+  }
+};
+
+/**
+ * Add a new team member
+ */
+export const addTeamMember = async (userData: {
+  first_name: string;
+  last_name: string;
+  email: string;
+  role: 'admin' | 'salesperson';
+}): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('app_user')
+      .insert([userData]);
+    
+    if (error) {
+      console.error("Error adding team member:", error);
+      toast.error('Failed to add team member');
+      return false;
+    }
+    
+    toast.success('Team member added successfully');
+    return true;
+  } catch (error) {
+    console.error("Error in addTeamMember:", error);
+    return false;
+  }
+};
+
+/**
+ * Update a team member
+ */
+export const updateTeamMember = async (userId: string, userData: {
+  first_name: string;
+  last_name: string;
+  email: string;
+  role: 'admin' | 'salesperson';
+}): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('app_user')
+      .update(userData)
+      .eq('id', userId);
+    
+    if (error) {
+      console.error("Error updating team member:", error);
+      toast.error('Failed to update team member');
+      return false;
+    }
+    
+    toast.success('Team member updated successfully');
+    return true;
+  } catch (error) {
+    console.error("Error in updateTeamMember:", error);
+    return false;
+  }
+};
+
+/**
+ * Delete a team member
+ */
+export const deleteTeamMember = async (userId: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('app_user')
+      .delete()
+      .eq('id', userId);
+    
+    if (error) {
+      console.error("Error deleting team member:", error);
+      toast.error('Failed to delete team member');
+      return false;
+    }
+    
+    toast.success('Team member deleted successfully');
+    return true;
+  } catch (error) {
+    console.error("Error in deleteTeamMember:", error);
     return false;
   }
 };

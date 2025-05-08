@@ -20,14 +20,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-// Mock team members data
-const mockTeamMembers = [
-  { id: 1, name: 'John Adams', email: 'john@ourcrm.com', role: 'Admin', lastActive: '10 minutes ago' },
-  { id: 2, name: 'Sarah Johnson', email: 'sarah@ourcrm.com', role: 'Salesperson', lastActive: '2 hours ago' },
-  { id: 3, name: 'Mike Williams', email: 'mike@ourcrm.com', role: 'Salesperson', lastActive: '1 day ago' },
-  { id: 4, name: 'Lisa Brown', email: 'lisa@ourcrm.com', role: 'Admin', lastActive: '3 minutes ago' },
-];
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { 
+  AppUser,
+  fetchTeamMembers, 
+  addTeamMember, 
+  updateTeamMember, 
+  deleteTeamMember 
+} from '@/services/supabaseService';
 
 // Mock activity log data
 const mockActivityLog = [
@@ -39,36 +39,56 @@ const mockActivityLog = [
 ];
 
 interface TeamMemberFormData {
-  id?: number;
-  name: string;
+  id?: string;
+  first_name: string;
+  last_name: string;
   email: string;
-  role: 'Admin' | 'Salesperson';
+  role: 'admin' | 'salesperson';
 }
 
 const TeamManagement = () => {
-  const [teamMembers, setTeamMembers] = useState(mockTeamMembers);
   const [activityLog] = useState(mockActivityLog);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentMember, setCurrentMember] = useState<TeamMemberFormData>({
-    name: '',
+    first_name: '',
+    last_name: '',
     email: '',
-    role: 'Salesperson'
+    role: 'salesperson'
   });
 
-  const handleDeleteMember = (id: number) => {
+  const queryClient = useQueryClient();
+
+  // Fetch team members data
+  const { data: teamMembers = [], isLoading } = useQuery({
+    queryKey: ['teamMembers'],
+    queryFn: fetchTeamMembers
+  });
+
+  // Mutations for adding, updating, and deleting team members
+  const addMemberMutation = useMutation({
+    mutationFn: addTeamMember,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['teamMembers'] })
+  });
+
+  const updateMemberMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string, data: Omit<TeamMemberFormData, 'id'> }) => 
+      updateTeamMember(id, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['teamMembers'] })
+  });
+
+  const deleteMemberMutation = useMutation({
+    mutationFn: deleteTeamMember,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['teamMembers'] })
+  });
+
+  const handleDeleteMember = (id: string) => {
     // Show confirmation toast
     toast({
       title: "Confirm Deletion",
       description: "Are you sure you want to delete this team member?",
       action: (
         <Button 
-          onClick={() => {
-            setTeamMembers(teamMembers.filter(member => member.id !== id));
-            toast({
-              title: "Team member removed",
-              description: "The team member has been removed successfully.",
-            });
-          }}
+          onClick={() => deleteMemberMutation.mutate(id)}
           variant="destructive"
         >
           Delete
@@ -77,21 +97,23 @@ const TeamManagement = () => {
     });
   };
 
-  const handleEditMember = (member: typeof teamMembers[0]) => {
+  const handleEditMember = (member: AppUser) => {
     setCurrentMember({
       id: member.id,
-      name: member.name,
+      first_name: member.first_name,
+      last_name: member.last_name,
       email: member.email,
-      role: member.role as 'Admin' | 'Salesperson'
+      role: member.role
     });
     setIsDialogOpen(true);
   };
 
   const handleAddNewMember = () => {
     setCurrentMember({
-      name: '',
+      first_name: '',
+      last_name: '',
       email: '',
-      role: 'Salesperson'
+      role: 'salesperson'
     });
     setIsDialogOpen(true);
   };
@@ -101,38 +123,37 @@ const TeamManagement = () => {
     
     if (currentMember.id) {
       // Update existing member
-      setTeamMembers(teamMembers.map(member => 
-        member.id === currentMember.id ? { 
-          ...member, 
-          name: currentMember.name,
-          email: currentMember.email,
-          role: currentMember.role
-        } : member
-      ));
-      
-      toast({
-        title: "Team member updated",
-        description: `${currentMember.name} has been updated successfully.`,
-      });
+      const { id, ...data } = currentMember;
+      updateMemberMutation.mutate({ id, data });
     } else {
       // Add new member
-      const newMember = {
-        id: teamMembers.length + 1,
-        name: currentMember.name,
-        email: currentMember.email,
-        role: currentMember.role,
-        lastActive: 'Just now'
-      };
-      
-      setTeamMembers([...teamMembers, newMember]);
-      
-      toast({
-        title: "Team member added",
-        description: `${currentMember.name} has been added successfully.`,
-      });
+      addMemberMutation.mutate(currentMember);
     }
     
     setIsDialogOpen(false);
+  };
+
+  // Format last active time for display
+  const formatLastActive = (lastActive: string | null): string => {
+    if (!lastActive) return 'Never';
+    
+    // Get the difference in milliseconds
+    const now = new Date();
+    const lastActiveDate = new Date(lastActive);
+    const diffMs = now.getTime() - lastActiveDate.getTime();
+    
+    // Convert to minutes, hours, days
+    const diffMinutes = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMinutes < 60) {
+      return `${diffMinutes} minute${diffMinutes !== 1 ? 's' : ''} ago`;
+    } else if (diffHours < 24) {
+      return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+    } else {
+      return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+    }
   };
 
   return (
@@ -150,54 +171,64 @@ const TeamManagement = () => {
             <CardTitle>Team Members</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow className="border-white/10">
-                  <TableHead className="text-white">Name</TableHead>
-                  <TableHead className="text-white">Email</TableHead>
-                  <TableHead className="text-white">Role</TableHead>
-                  <TableHead className="text-white">Last Active</TableHead>
-                  <TableHead className="text-right text-white">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {teamMembers.map((member) => (
-                  <TableRow key={member.id} className="border-white/10">
-                    <TableCell className="font-medium text-white">
-                      <div className="flex items-center">
-                        <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center mr-2">
-                          <User size={14} />
-                        </div>
-                        {member.name}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-white">{member.email}</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        member.role === 'Admin' ? 'bg-crm-accent/20 text-crm-accent' : 'bg-blue-500/20 text-blue-500'
-                      }`}>
-                        {member.role}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-white">
-                      <div className="flex items-center text-white/70">
-                        <Clock size={14} className="mr-1" /> {member.lastActive}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end space-x-2">
-                        <Button variant="outline" size="sm" onClick={() => handleEditMember(member)} className="bg-transparent hover:bg-white/10">
-                          <Edit size={14} />
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleDeleteMember(member.id)} className="bg-transparent hover:bg-white/10">
-                          <Trash2 size={14} />
-                        </Button>
-                      </div>
-                    </TableCell>
+            {isLoading ? (
+              <div className="text-center py-4">Loading team members...</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-white/10">
+                    <TableHead className="text-white">Name</TableHead>
+                    <TableHead className="text-white">Email</TableHead>
+                    <TableHead className="text-white">Role</TableHead>
+                    <TableHead className="text-white">Last Active</TableHead>
+                    <TableHead className="text-right text-white">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {teamMembers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-white">No team members found</TableCell>
+                    </TableRow>
+                  ) : (
+                    teamMembers.map((member) => (
+                      <TableRow key={member.id} className="border-white/10">
+                        <TableCell className="font-medium text-white">
+                          <div className="flex items-center">
+                            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center mr-2">
+                              <User size={14} />
+                            </div>
+                            {member.first_name} {member.last_name}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-white">{member.email}</TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded-full text-xs ${
+                            member.role === 'admin' ? 'bg-crm-accent/20 text-crm-accent' : 'bg-blue-500/20 text-blue-500'
+                          }`}>
+                            {member.role}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-white">
+                          <div className="flex items-center text-white/70">
+                            <Clock size={14} className="mr-1" /> {formatLastActive(member.last_active)}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end space-x-2">
+                            <Button variant="outline" size="sm" onClick={() => handleEditMember(member)} className="bg-transparent hover:bg-white/10">
+                              <Edit size={14} />
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => handleDeleteMember(member.id)} className="bg-transparent hover:bg-white/10">
+                              <Trash2 size={14} />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
         
@@ -240,12 +271,24 @@ const TeamManagement = () => {
           <form onSubmit={handleFormSubmit}>
             <div className="space-y-4 py-2">
               <div className="grid w-full items-center gap-2">
-                <label htmlFor="name" className="text-sm font-medium">Name</label>
+                <label htmlFor="first_name" className="text-sm font-medium">First Name</label>
                 <input
                   type="text"
-                  id="name"
-                  value={currentMember.name}
-                  onChange={(e) => setCurrentMember({...currentMember, name: e.target.value})}
+                  id="first_name"
+                  value={currentMember.first_name}
+                  onChange={(e) => setCurrentMember({...currentMember, first_name: e.target.value})}
+                  className="px-3 py-2 bg-white/5 border border-white/20 rounded-md focus:outline-none focus:ring-2 focus:ring-crm-accent/50 text-white"
+                  required
+                />
+              </div>
+              
+              <div className="grid w-full items-center gap-2">
+                <label htmlFor="last_name" className="text-sm font-medium">Last Name</label>
+                <input
+                  type="text"
+                  id="last_name"
+                  value={currentMember.last_name}
+                  onChange={(e) => setCurrentMember({...currentMember, last_name: e.target.value})}
                   className="px-3 py-2 bg-white/5 border border-white/20 rounded-md focus:outline-none focus:ring-2 focus:ring-crm-accent/50 text-white"
                   required
                 />
@@ -268,11 +311,11 @@ const TeamManagement = () => {
                 <select
                   id="role"
                   value={currentMember.role}
-                  onChange={(e) => setCurrentMember({...currentMember, role: e.target.value as 'Admin' | 'Salesperson'})}
+                  onChange={(e) => setCurrentMember({...currentMember, role: e.target.value as 'admin' | 'salesperson'})}
                   className="px-3 py-2 bg-[#0f133e] border border-white/20 rounded-md focus:outline-none focus:ring-2 focus:ring-crm-accent/50 text-white"
                 >
-                  <option value="Admin" className="bg-[#0f133e] text-white">Admin</option>
-                  <option value="Salesperson" className="bg-[#0f133e] text-white">Salesperson</option>
+                  <option value="admin" className="bg-[#0f133e] text-white">Admin</option>
+                  <option value="salesperson" className="bg-[#0f133e] text-white">Salesperson</option>
                 </select>
               </div>
             </div>
@@ -281,7 +324,13 @@ const TeamManagement = () => {
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="bg-transparent hover:bg-white/10">
                 Cancel
               </Button>
-              <Button type="submit" className="bg-red-600 text-white hover:bg-red-700">{currentMember.id ? 'Update' : 'Add'}</Button>
+              <Button 
+                type="submit" 
+                className="bg-red-600 text-white hover:bg-red-700"
+                disabled={addMemberMutation.isPending || updateMemberMutation.isPending}
+              >
+                {currentMember.id ? 'Update' : 'Add'}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
