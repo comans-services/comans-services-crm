@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { fetchAllCommunications } from '@/services/supabaseService';
+import { getMockProspects } from '@/services/mockDataService';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,18 +15,34 @@ const EmailCommunicationHistory = () => {
   const [selectedEmail, setSelectedEmail] = useState<any>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   
-  // Fetch communications data using React Query
-  const { data: communications = [], isLoading } = useQuery({
-    queryKey: ['communications'],
-    queryFn: fetchAllCommunications,
+  // Fetch clients data using React Query
+  const { data: clients = [], isLoading } = useQuery({
+    queryKey: ['prospects'],
+    queryFn: getMockProspects,
   });
 
+  // Flatten communications from all clients
+  const allCommunications = clients.flatMap(client => 
+    client.communications.map(comm => ({
+      ...comm,
+      clientName: `${client.first_name} ${client.last_name}`,
+      clientEmail: client.email,
+      clientId: client.id,
+      // Add a default activity_type for all communications
+      activity_type: 'Email'
+    }))
+  );
+
+  // Sort by date (newest first)
+  const sortedCommunications = [...allCommunications].sort((a, b) => 
+    new Date(b.date_of_communication).getTime() - new Date(a.date_of_communication).getTime()
+  );
+
   // Filter communications based on search term
-  const filteredCommunications = communications.filter(comm => 
+  const filteredCommunications = sortedCommunications.filter(comm => 
     comm.subject_text.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (comm.prospect_profile && 
-      (`${comm.prospect_profile.first_name} ${comm.prospect_profile.last_name}`).toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (comm.prospect_profile && comm.prospect_profile.email.toLowerCase().includes(searchTerm.toLowerCase()))
+    comm.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    comm.clientEmail.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleEmailClick = (communication: any) => {
@@ -85,29 +101,23 @@ const EmailCommunicationHistory = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredCommunications.map((comm) => (
+                  {filteredCommunications.map((comm, index) => (
                     <TableRow 
-                      key={comm.id} 
+                      key={index} 
                       className="border-b border-white/10 hover:bg-white/5 transition-colors cursor-pointer"
                       onClick={() => handleEmailClick(comm)}
                     >
                       <TableCell className="py-4 px-4">
                         <div>
-                          <p className="font-medium">
-                            {comm.prospect_profile ? 
-                              `${comm.prospect_profile.first_name} ${comm.prospect_profile.last_name}` : 
-                              'Unknown Client'}
-                          </p>
-                          <p className="text-sm text-white/70">
-                            {comm.prospect_profile?.email || 'No email'}
-                          </p>
+                          <p className="font-medium">{comm.clientName}</p>
+                          <p className="text-sm text-white/70">{comm.clientEmail}</p>
                         </div>
                       </TableCell>
                       <TableCell className="py-4 px-4">{comm.subject_text}</TableCell>
                       <TableCell className="py-4 px-4">
                         <div className="flex items-center">
                           <span className={`w-2.5 h-2.5 rounded-full bg-crm-accent mr-2`}></span>
-                          <span>Email</span>
+                          <span>{comm.activity_type}</span>
                         </div>
                       </TableCell>
                       <TableCell className="py-4 px-4">
@@ -120,7 +130,7 @@ const EmailCommunicationHistory = () => {
                           className="border-white/20 text-white hover:bg-white/10"
                           onClick={(e) => {
                             e.stopPropagation();
-                            window.open(`/clients/${comm.prospect_id}`, '_blank');
+                            window.open(`/clients/${comm.clientId}`, '_blank');
                           }}
                         >
                           View Client
@@ -155,9 +165,7 @@ const EmailCommunicationHistory = () => {
               
               <div className="border-b border-white/10 pb-3">
                 <p className="text-sm text-white/70">To</p>
-                <p className="font-medium">
-                  {selectedEmail.prospect_profile?.email || 'Unknown recipient'}
-                </p>
+                <p className="font-medium">{selectedEmail.clientEmail}</p>
               </div>
               
               <div className="border-b border-white/10 pb-3">

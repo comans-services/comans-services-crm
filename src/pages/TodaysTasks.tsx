@@ -1,11 +1,11 @@
 
-import React, { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { getMockProspects, ProspectWithEngagement } from '@/services/mockDataService';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { fetchTasks, Task, toggleTaskCompletion } from '@/services/supabaseService';
 
 // Priority indicator component
 const PriorityIndicator = ({ priority }: { priority: 'high' | 'medium' | 'low' }) => {
@@ -25,22 +25,62 @@ const PriorityIndicator = ({ priority }: { priority: 'high' | 'medium' | 'low' }
 
 const TodaysTasks = () => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   
-  // Fetch tasks using React Query
-  const { data: tasks = [], isLoading, error } = useQuery({
-    queryKey: ['tasks'],
-    queryFn: fetchTasks,
+  // Fetch prospects using React Query
+  const { data: prospects = [], isLoading, error } = useQuery({
+    queryKey: ['prospects'],
+    queryFn: getMockProspects,
   });
 
-  const handleCompleteTask = async (taskId: string, completed: boolean, e: React.MouseEvent) => {
-    e.stopPropagation();
+  // Generate prioritized to-do list for today
+  const generatePrioritizedTasks = (prospects: ProspectWithEngagement[]) => {
+    const tasks = [];
     
-    const success = await toggleTaskCompletion(taskId, !completed);
-    if (success) {
-      // Invalidate tasks query to refetch data
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    // Add urgent follow-ups as high priority
+    const urgentProspects = prospects.filter(p => p.daysSinceLastContact !== null && p.daysSinceLastContact > 10);
+    for (const prospect of urgentProspects) {
+      tasks.push({
+        id: `task-urgent-${prospect.id}`,
+        type: 'follow-up',
+        prospect,
+        priority: 'high' as const,
+        description: `Contact ${prospect.first_name} ${prospect.last_name} (${prospect.daysSinceLastContact} days since last contact)`
+      });
     }
+    
+    // Add today's follow-ups as medium priority
+    const todayProspects = prospects.filter(p => p.daysSinceLastContact !== null && p.daysSinceLastContact > 5 && p.daysSinceLastContact <= 10);
+    for (const prospect of todayProspects) {
+      tasks.push({
+        id: `task-today-${prospect.id}`,
+        type: 'follow-up',
+        prospect,
+        priority: 'medium' as const,
+        description: `Follow up with ${prospect.first_name} ${prospect.last_name} from ${prospect.company}`
+      });
+    }
+    
+    // Add weekly follow-ups as low priority
+    const weeklyProspects = prospects.filter(p => p.daysSinceLastContact !== null && p.daysSinceLastContact > 2 && p.daysSinceLastContact <= 5);
+    for (const prospect of weeklyProspects) {
+      tasks.push({
+        id: `task-weekly-${prospect.id}`,
+        type: 'check-in',
+        prospect,
+        priority: 'low' as const,
+        description: `Schedule check-in with ${prospect.first_name} ${prospect.last_name}`
+      });
+    }
+    
+    return tasks;
+  };
+  
+  const prioritizedTasks = generatePrioritizedTasks(prospects);
+
+  const handleCompleteTask = (taskId: string, description: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    toast.success(`Marked "${description}" as done`);
+    // In a real app, this would update the task in the backend
   };
 
   if (isLoading) {
@@ -63,16 +103,16 @@ const TodaysTasks = () => {
         </div>
         
         <div className="space-y-4">
-          {tasks.length > 0 ? (
-            tasks.map((task) => (
+          {prioritizedTasks.length > 0 ? (
+            prioritizedTasks.map((task) => (
               <div 
                 key={task.id} 
                 className={`flex items-center justify-between py-3 px-4 rounded-md transition-colors cursor-pointer border-l-4 ${
                   task.priority === 'high' ? 'border-l-red-500 bg-black/40' : 
                   task.priority === 'medium' ? 'border-l-yellow-500 bg-black/30' : 
                   'border-l-green-500 bg-black/20'
-                } ${task.completed ? 'opacity-50' : ''}`}
-                onClick={() => navigate(`/clients/${task.prospect_id}`)}
+                }`}
+                onClick={() => navigate(`/clients/${task.prospect.id}`)}
               >
                 <div className="flex items-center gap-4">
                   <div className="min-w-[24px]">
@@ -80,30 +120,29 @@ const TodaysTasks = () => {
                       variant="ghost" 
                       size="icon" 
                       className="h-6 w-6 rounded-full hover:bg-white/20"
-                      onClick={(e) => handleCompleteTask(task.id, task.completed, e)}
+                      onClick={(e) => handleCompleteTask(task.id, task.description, e)}
                     >
-                      <div className={`h-5 w-5 rounded-full border border-white/40 ${
-                        task.completed ? 'bg-white/40' : ''
-                      }`}></div>
+                      <div className="h-5 w-5 rounded-full border border-white/40"></div>
                     </Button>
                   </div>
                   <div>
-                    <p className="font-medium mb-1">{task.task_description}</p>
+                    <p className="font-medium mb-1">{task.description}</p>
                     <div className="flex items-center gap-4">
                       <PriorityIndicator priority={task.priority} />
-                      <span className="text-xs bg-white/10 px-2 py-1 rounded capitalize">
-                        {task.task_type}
-                      </span>
+                      {task.type === 'follow-up' && (
+                        <span className="text-xs bg-white/10 px-2 py-1 rounded">Follow-up</span>
+                      )}
+                      {task.type === 'check-in' && (
+                        <span className="text-xs bg-white/10 px-2 py-1 rounded">Check-in</span>
+                      )}
                     </div>
                   </div>
                 </div>
                 
                 <div className="text-right">
-                  <p className="text-sm text-white/70">
-                    {task.prospect_profile?.first_name} {task.prospect_profile?.last_name}
-                  </p>
+                  <p className="text-sm text-white/70">{task.prospect.company}</p>
                   <p className="text-xs text-white/50">
-                    Due: {new Date(task.due_date).toLocaleDateString()}
+                    {task.prospect.daysSinceLastContact} days ago
                   </p>
                 </div>
               </div>
@@ -122,19 +161,19 @@ const TodaysTasks = () => {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-white/70">High Priority</span>
-              <span className="font-bold">{tasks.filter(t => t.priority === 'high').length}</span>
+              <span className="font-bold">{prioritizedTasks.filter(t => t.priority === 'high').length}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-white/70">Medium Priority</span>
-              <span className="font-bold">{tasks.filter(t => t.priority === 'medium').length}</span>
+              <span className="font-bold">{prioritizedTasks.filter(t => t.priority === 'medium').length}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-white/70">Low Priority</span>
-              <span className="font-bold">{tasks.filter(t => t.priority === 'low').length}</span>
+              <span className="font-bold">{prioritizedTasks.filter(t => t.priority === 'low').length}</span>
             </div>
             <div className="flex items-center justify-between border-t border-white/10 pt-4 mt-4">
               <span className="font-bold">Total Tasks</span>
-              <span className="font-bold">{tasks.length}</span>
+              <span className="font-bold">{prioritizedTasks.length}</span>
             </div>
           </div>
         </div>
@@ -152,7 +191,7 @@ const TodaysTasks = () => {
             <Button 
               variant="outline" 
               className="w-full justify-between text-white border-white/20"
-              onClick={() => navigate('/prospect-status')}
+              onClick={() => navigate('/communications')}
             >
               View Prospect Status <ArrowRight size={16} />
             </Button>

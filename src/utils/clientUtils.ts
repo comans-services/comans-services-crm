@@ -1,38 +1,73 @@
 
+import { ProspectProfile, ProspectWithEngagement } from '@/services/mockDataService';
+
 /**
- * Get status color based on days since last contact
+ * Extracts the domain from an email address
  */
-export const getStatusColor = (daysSinceLastContact: number | null): string => {
-  if (daysSinceLastContact === null) {
-    return 'gray-400';
-  }
-  if (daysSinceLastContact <= 2) {
-    return 'green-500';
-  }
-  if (daysSinceLastContact <= 5) {
-    return 'yellow-500';
-  }
-  if (daysSinceLastContact <= 10) {
-    return 'orange-500';
-  }
-  return 'red-500';
+export const extractDomain = (email: string): string => {
+  const match = email.match(/@([^@]+)$/);
+  return match ? match[1] : '';
 };
 
 /**
- * Get recommended action based on days since last contact
+ * Gets the company name from a domain
+ */
+export const getDomainCompany = (domain: string): string => {
+  return domain.split('.')[0] || '';
+};
+
+/**
+ * Groups prospects by company domain
+ */
+export const groupProspectsByDomain = (
+  prospects: ProspectWithEngagement[]
+): Record<string, ProspectWithEngagement[]> => {
+  const companiesMap: Record<string, ProspectWithEngagement[]> = {};
+  
+  prospects.forEach(prospect => {
+    const domain = extractDomain(prospect.email);
+    const company = getDomainCompany(domain);
+    
+    if (!companiesMap[company]) {
+      companiesMap[company] = [];
+    }
+    
+    companiesMap[company].push(prospect);
+  });
+  
+  return companiesMap;
+};
+
+/**
+ * Determines the status color based on days since last contact
+ */
+export const getStatusColor = (daysSinceLastContact: number | null): string => {
+  if (daysSinceLastContact === null) {
+    return 'gray';
+  } else if (daysSinceLastContact <= 2) {
+    return 'green-500';
+  } else if (daysSinceLastContact <= 5) {
+    return 'yellow-500';
+  } else if (daysSinceLastContact <= 10) {
+    return 'orange-500';
+  } else {
+    return 'red-500';
+  }
+};
+
+/**
+ * Determines the recommended action based on days since last contact
  */
 export const getRecommendedAction = (daysSinceLastContact: number | null): string => {
   if (daysSinceLastContact === null) {
-    return 'Initial contact needed';
-  }
-  if (daysSinceLastContact <= 2) {
+    return 'Initial contact recommended';
+  } else if (daysSinceLastContact <= 2) {
     return 'Follow up next week';
-  }
-  if (daysSinceLastContact <= 5) {
+  } else if (daysSinceLastContact <= 5) {
     return 'Follow up this week';
-  }
-  if (daysSinceLastContact <= 10) {
+  } else if (daysSinceLastContact <= 10) {
     return 'Follow up today';
+  } else {
+    return 'Urgent follow up required';
   }
-  return 'Urgent follow up required';
 };

@@ -1,19 +1,17 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { Plus, MoreHorizontal } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import { fetchProspects, fetchDealStages, updateProspectDealStage } from '@/services/supabaseService';
+import { v4 as uuidv4 } from 'uuid';
 
 // Define client card types
 interface ClientCard {
   id: string;
   name: string;
-  company: string | null;
-  email: string;
-  dragId: string;
-  deal_stage_id: string | null;
+  company: string;
+  industry: string;
+  clientId: string;
+  // Add a unique drag ID to prevent key conflicts
+  dragId?: string;
 }
 
 // Define column types
@@ -23,72 +21,84 @@ interface Column {
   cards: ClientCard[];
 }
 
+// Add unique dragIds to all cards
+const addUniqueDragIds = (cards: ClientCard[]): ClientCard[] => {
+  return cards.map(card => ({
+    ...card,
+    dragId: `drag-${uuidv4()}`
+  }));
+};
+
+// Sample initial data with unique dragIds
+const initialColumns: Column[] = [
+  {
+    id: 'opportunity',
+    title: 'OPPORTUNITY',
+    cards: addUniqueDragIds([
+      { id: '1', name: 'Essential', company: 'Food Manufacturing', industry: 'Food', clientId: 'COM-6' },
+      { id: '2', name: 'Premier Fresh Australia', company: 'Food Manufacturing', industry: 'Food', clientId: 'COM-9' },
+      { id: '3', name: 'Scalzo Foods', company: 'Food Manufacturing', industry: 'Food', clientId: 'COM-12' }
+    ])
+  },
+  {
+    id: 'validated-opportunity',
+    title: 'VALIDATED OPPORTUNITY',
+    cards: addUniqueDragIds([
+      { id: '4', name: 'Jemena', company: 'Energy', industry: 'Energy', clientId: 'COM-54' },
+      { id: '5', name: 'Alkira', company: 'Tech Solutions', industry: 'Technology', clientId: 'COM-133' }
+    ])
+  },
+  {
+    id: 'meeting-booked',
+    title: 'MEETING BOOKED',
+    cards: addUniqueDragIds([
+      { id: '6', name: 'Zinfra', company: 'Energy', industry: 'Energy', clientId: 'COM-3' },
+      { id: '7', name: 'Brownes Dairy', company: 'Food manufacturing', industry: 'Food', clientId: 'COM-53' }
+    ])
+  },
+  {
+    id: 'quote-requested',
+    title: 'QUOTE REQUESTED',
+    cards: addUniqueDragIds([])
+  },
+  {
+    id: 'quote-sent',
+    title: 'QUOTE SENT',
+    cards: addUniqueDragIds([])
+  },
+  {
+    id: 'current-account',
+    title: 'CURRENT ACCOUNT',
+    cards: addUniqueDragIds([
+      { id: '8', name: 'Saputo', company: 'Food Manufacturing', industry: 'Food', clientId: 'COM-1' },
+      { id: '9', name: 'Vanessa New Company', company: 'Consulting', industry: 'Business', clientId: 'COM-63' },
+      { id: '10', name: 'Bryce New Company', company: 'Tech', industry: 'Technology', clientId: 'COM-71' },
+      { id: '11', name: 'Naz Care', company: 'Non Profit', industry: 'Health', clientId: 'COM-67' },
+      { id: '12', name: 'Southerly Ten', company: 'Energy', industry: 'Energy', clientId: 'COM-55' }
+    ])
+  },
+  {
+    id: 'launch-account',
+    title: 'LAUNCH ACCOUNT',
+    cards: addUniqueDragIds([])
+  },
+  {
+    id: 'won-work',
+    title: 'WON WORK',
+    cards: addUniqueDragIds([])
+  },
+  {
+    id: 'lost-work',
+    title: 'LOST WORK',
+    cards: addUniqueDragIds([])
+  }
+];
+
 const KanbanBoard = () => {
-  const [columns, setColumns] = useState<Column[]>([]);
-  
-  // Fetch prospects and deal stages
-  const { 
-    data: prospects = [], 
-    isLoading: isLoadingProspects
-  } = useQuery({
-    queryKey: ['prospects'],
-    queryFn: fetchProspects
-  });
-  
-  const { 
-    data: dealStages = [], 
-    isLoading: isLoadingDealStages
-  } = useQuery({
-    queryKey: ['dealStages'],
-    queryFn: fetchDealStages
-  });
-  
-  const isLoading = isLoadingProspects || isLoadingDealStages;
-  
-  // Build the board columns from deal stages and prospects
-  useEffect(() => {
-    if (!dealStages.length) return;
-    
-    // Create columns for each deal stage
-    const stageColumns = dealStages.map(stage => ({
-      id: stage.id,
-      title: stage.name.toUpperCase(),
-      cards: []
-    }));
-    
-    // Distribute prospects into columns based on their deal stage
-    if (prospects.length && stageColumns.length) {
-      prospects.forEach(prospect => {
-        // Find which column this prospect belongs to
-        const stageId = prospect.deal_stage_id || dealStages[0]?.id;
-        const column = stageColumns.find(col => col.id === stageId);
-        
-        if (column) {
-          // Add prospect to appropriate column
-          column.cards.push({
-            id: prospect.id,
-            name: `${prospect.first_name} ${prospect.last_name}`,
-            company: prospect.company,
-            email: prospect.email,
-            dragId: `drag-${prospect.id}`,
-            deal_stage_id: prospect.deal_stage_id
-          });
-        }
-      });
-    }
-    
-    // Sort columns by the deal stage sort_order
-    stageColumns.sort((a, b) => {
-      const stageA = dealStages.find(stage => stage.id === a.id);
-      const stageB = dealStages.find(stage => stage.id === b.id);
-      return (stageA?.sort_order || 0) - (stageB?.sort_order || 0);
-    });
-    
-    setColumns(stageColumns);
-  }, [prospects, dealStages]);
+  const [columns, setColumns] = useState<Column[]>(initialColumns);
   
   // Handle drag end
-  const handleDragEnd = async (result: any) => {
+  const handleDragEnd = (result: any) => {
     const { destination, source, draggableId } = result;
     
     // If there's no destination, do nothing
@@ -127,32 +137,29 @@ const KanbanBoard = () => {
       return column;
     });
     
-    // Update UI immediately
     setColumns(newColumns);
-    
-    // Update the deal stage in Supabase
-    const prospectId = movedCard.id;
-    const newDealStageId = destColumn.id;
-    
-    try {
-      await updateProspectDealStage(prospectId, newDealStageId);
-      toast.success(`Updated status for ${movedCard.name}`);
-    } catch (error) {
-      toast.error('Failed to update prospect status');
-      console.error('Error updating deal stage:', error);
-    }
   };
   
-  // Improved function to get draggable styles
+  // Improved function to get draggable styles to ensure cursor alignment
   const getItemStyle = (isDragging: boolean, draggableStyle: any) => ({
+    // Keep item visible during drag
     userSelect: 'none' as const,
     opacity: 1,
     margin: '0 0 8px 0',
+    
+    // Visual feedback when dragging
     background: isDragging ? 'rgba(59, 130, 246, 0.6)' : 'rgba(255, 255, 255, 0.05)',
     borderColor: isDragging ? 'rgb(59, 130, 246)' : 'rgba(255, 255, 255, 0.1)',
     boxShadow: isDragging ? '0 10px 15px rgba(0, 0, 0, 0.4)' : 'none',
+    
+    // Don't apply any transforms that could offset the cursor position
     transform: 'translate(0, 0)',
+    
+    // Apply the draggable styles but ensure we don't create offset issues
     ...draggableStyle,
+    
+    // Critical fix: Ensure the transform includes only what DnD needs for positioning
+    // and remove any scaling or other transforms that might cause misalignment
     ...(isDragging && draggableStyle && draggableStyle.transform
       ? {
           transform: draggableStyle.transform.replace(/scale\([^)]+\)/g, ''),
@@ -160,10 +167,6 @@ const KanbanBoard = () => {
         }
       : {})
   });
-  
-  if (isLoading) {
-    return <div className="py-4 flex items-center justify-center h-64">Loading pipeline data...</div>;
-  }
   
   return (
     <div className="py-4">
@@ -207,8 +210,8 @@ const KanbanBoard = () => {
                       >
                         {column.cards.map((card, index) => (
                           <Draggable 
-                            key={card.dragId} 
-                            draggableId={card.dragId} 
+                            key={card.dragId || card.id} 
+                            draggableId={card.dragId || card.id} 
                             index={index}
                           >
                             {(provided, snapshot) => (
@@ -224,11 +227,12 @@ const KanbanBoard = () => {
                               >
                                 <div className="cursor-move">
                                   <div className="text-sm font-medium">{card.name}</div>
-                                  <div className="text-xs text-white/60 mt-1">{card.company || 'No company'}</div>
+                                  <div className="text-xs text-white/60 mt-1">{card.company}</div>
                                   <div className="flex items-center justify-between mt-2">
                                     <div className="bg-white/10 text-xs rounded px-2 py-0.5">
-                                      {card.email.split('@')[1]}
+                                      {card.clientId}
                                     </div>
+                                    <div className="text-white/40 text-xs">{card.industry}</div>
                                   </div>
                                 </div>
                               </div>

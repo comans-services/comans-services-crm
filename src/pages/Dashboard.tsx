@@ -1,12 +1,12 @@
-import React from 'react';
-import { Users, Mail, Calendar, TrendingUp, Bell, ArrowRight } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Users, Mail, Calendar, TrendingUp, Bell, ArrowRight, CheckCircle } from 'lucide-react';
+import { getMockProspects, ProspectWithEngagement } from '../services/mockDataService';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchProspects, fetchAllCommunications, fetchTasks, toggleTaskCompletion } from '@/services/supabaseService';
+import { useQuery } from '@tanstack/react-query';
 
 const StatCard = ({ title, value, icon, color }: { title: string; value: string | number; icon: React.ReactNode; color: string }) => (
   <div className="card hover-scale">
@@ -39,27 +39,12 @@ const PriorityIndicator = ({ priority }: { priority: 'high' | 'medium' | 'low' }
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   
   // Fetch prospects using React Query
-  const { data: prospects = [], isLoading: isLoadingProspects } = useQuery({
+  const { data: prospects = [], isLoading, error } = useQuery({
     queryKey: ['prospects'],
-    queryFn: fetchProspects,
+    queryFn: getMockProspects,
   });
-
-  // Fetch communications using React Query
-  const { data: communications = [], isLoading: isLoadingCommunications } = useQuery({
-    queryKey: ['all-communications'],
-    queryFn: fetchAllCommunications,
-  });
-
-  // Fetch tasks using React Query
-  const { data: tasks = [], isLoading: isLoadingTasks } = useQuery({
-    queryKey: ['tasks'],
-    queryFn: fetchTasks,
-  });
-
-  const isLoading = isLoadingProspects || isLoadingCommunications || isLoadingTasks;
 
   // Handle "Add Client" button click
   const handleAddClient = () => {
@@ -70,19 +55,12 @@ const Dashboard = () => {
     });
   };
 
-  // Handle task completion toggle
-  const handleTaskCompletion = async (taskId: string, completed: boolean, e: React.MouseEvent) => {
-    e.stopPropagation();
-    
-    const success = await toggleTaskCompletion(taskId, !completed);
-    if (success) {
-      // Invalidate tasks query to refetch data
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-    }
-  };
-
   if (isLoading) {
     return <div className="flex justify-center items-center h-64">Loading dashboard data...</div>;
+  }
+
+  if (error) {
+    return <div className="text-red-500">Error loading dashboard data</div>;
   }
 
   // Calculate statistics
@@ -90,28 +68,50 @@ const Dashboard = () => {
   const todayFollowups = prospects.filter(p => p.daysSinceLastContact !== null && p.daysSinceLastContact > 5 && p.daysSinceLastContact <= 10).length;
   const thisWeekFollowups = prospects.filter(p => p.daysSinceLastContact !== null && p.daysSinceLastContact > 2 && p.daysSinceLastContact <= 5).length;
 
-  // Get high priority tasks for dashboard
-  const prioritizedTasks = tasks
-    .filter(task => !task.completed)
-    .sort((a, b) => {
-      // Sort by priority first
-      const priorityOrder = { high: 0, medium: 1, low: 2 };
-      const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
-      if (priorityDiff !== 0) return priorityDiff;
-      
-      // Then by due date
-      return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
-    })
-    .slice(0, 5); // Only get the top 5 tasks for display
-
-  // Get unique companies for companies section
-  const companies = Array.from(new Set(prospects.map(p => p.company))).filter(Boolean);
-  const companyCounts: Record<string, number> = {};
+  // Generate prioritized to-do list for today
+  const generatePrioritizedTasks = (prospects: ProspectWithEngagement[]) => {
+    const tasks = [];
+    
+    // Add urgent follow-ups as high priority
+    const urgentProspects = prospects.filter(p => p.daysSinceLastContact !== null && p.daysSinceLastContact > 10);
+    for (const prospect of urgentProspects) {
+      tasks.push({
+        id: `task-urgent-${prospect.id}`,
+        type: 'follow-up',
+        prospect,
+        priority: 'high' as const,
+        description: `Contact ${prospect.first_name} ${prospect.last_name} (${prospect.daysSinceLastContact} days since last contact)`
+      });
+    }
+    
+    // Add today's follow-ups as medium priority
+    const todayProspects = prospects.filter(p => p.daysSinceLastContact !== null && p.daysSinceLastContact > 5 && p.daysSinceLastContact <= 10);
+    for (const prospect of todayProspects) {
+      tasks.push({
+        id: `task-today-${prospect.id}`,
+        type: 'follow-up',
+        prospect,
+        priority: 'medium' as const,
+        description: `Follow up with ${prospect.first_name} ${prospect.last_name} from ${prospect.company}`
+      });
+    }
+    
+    // Add weekly follow-ups as low priority
+    const weeklyProspects = prospects.filter(p => p.daysSinceLastContact !== null && p.daysSinceLastContact > 2 && p.daysSinceLastContact <= 5);
+    for (const prospect of weeklyProspects.slice(0, 3)) { // Limit to 3 weekly tasks for now
+      tasks.push({
+        id: `task-weekly-${prospect.id}`,
+        type: 'check-in',
+        prospect,
+        priority: 'low' as const,
+        description: `Schedule check-in with ${prospect.first_name} ${prospect.last_name}`
+      });
+    }
+    
+    return tasks;
+  };
   
-  prospects.forEach(prospect => {
-    const company = prospect.company || 'Unknown';
-    companyCounts[company] = (companyCounts[company] || 0) + 1;
-  });
+  const prioritizedTasks = generatePrioritizedTasks(prospects);
 
   return (
     <div>
@@ -166,7 +166,7 @@ const Dashboard = () => {
                     task.priority === 'medium' ? 'border-l-yellow-500 bg-black/30' : 
                     'border-l-green-500 bg-black/20'
                   }`}
-                  onClick={() => navigate(`/clients/${task.prospect_id}`)}
+                  onClick={() => navigate(`/clients/${task.prospect.id}`)}
                 >
                   <div className="flex items-center gap-4">
                     <div className="min-w-[24px]">
@@ -174,30 +174,35 @@ const Dashboard = () => {
                         variant="ghost" 
                         size="icon" 
                         className="h-6 w-6 rounded-full hover:bg-white/20"
-                        onClick={(e) => handleTaskCompletion(task.id, task.completed, e)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toast({
+                            title: "Task completed",
+                            description: `Marked "${task.description}" as done`,
+                          });
+                        }}
                       >
-                        <div className={`h-5 w-5 rounded-full border border-white/40 ${
-                          task.completed ? 'bg-white/40' : ''
-                        }`}></div>
+                        <div className="h-5 w-5 rounded-full border border-white/40"></div>
                       </Button>
                     </div>
                     <div>
-                      <p className="font-medium mb-1">{task.task_description}</p>
+                      <p className="font-medium mb-1">{task.description}</p>
                       <div className="flex items-center gap-4">
                         <PriorityIndicator priority={task.priority} />
-                        <span className="text-xs bg-white/10 px-2 py-1 rounded capitalize">
-                          {task.task_type}
-                        </span>
+                        {task.type === 'follow-up' && (
+                          <span className="text-xs bg-white/10 px-2 py-1 rounded">Follow-up</span>
+                        )}
+                        {task.type === 'check-in' && (
+                          <span className="text-xs bg-white/10 px-2 py-1 rounded">Check-in</span>
+                        )}
                       </div>
                     </div>
                   </div>
                   
                   <div className="text-right">
-                    <p className="text-sm text-white/70">
-                      {task.prospect_profile?.first_name} {task.prospect_profile?.last_name}
-                    </p>
+                    <p className="text-sm text-white/70">{task.prospect.company}</p>
                     <p className="text-xs text-white/50">
-                      Due: {new Date(task.due_date).toLocaleDateString()}
+                      {task.prospect.daysSinceLastContact} days ago
                     </p>
                   </div>
                 </div>
@@ -219,19 +224,22 @@ const Dashboard = () => {
         <div className="card bg-black/80 backdrop-blur-md border border-white/20">
           <h2 className="text-xl font-bold mb-4">Companies</h2>
           <div className="space-y-4">
-            {Object.entries(companyCounts).slice(0, 5).map(([company, count], i) => (
-              <div key={i} className="flex items-center justify-between border-b border-white/10 pb-3">
-                <div className="flex items-center">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-crm-background-from to-crm-background-to flex items-center justify-center mr-3">
-                    <span className="font-bold text-xs">{company.substring(0, 2).toUpperCase()}</span>
+            {Array.from(new Set(prospects.map(p => p.company))).slice(0, 5).map((company, i) => {
+              const companyProspects = prospects.filter(p => p.company === company);
+              return (
+                <div key={i} className="flex items-center justify-between border-b border-white/10 pb-3">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-crm-background-from to-crm-background-to flex items-center justify-center mr-3">
+                      <span className="font-bold text-xs">{company.substring(0, 2).toUpperCase()}</span>
+                    </div>
+                    <p>{company.charAt(0).toUpperCase() + company.slice(1)}</p>
                   </div>
-                  <p>{company.charAt(0).toUpperCase() + company.slice(1)}</p>
+                  <span className="text-xs text-white/50">
+                    {companyProspects.length} prospect{companyProspects.length !== 1 ? 's' : ''}
+                  </span>
                 </div>
-                <span className="text-xs text-white/50">
-                  {count} prospect{count !== 1 ? 's' : ''}
-                </span>
-              </div>
-            ))}
+              )}
+            )}
           </div>
         </div>
       </div>
@@ -244,15 +252,15 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {communications.slice(0, 4).map((comm) => (
-                <div key={comm.id} className="flex items-start border-b border-white/10 pb-4">
+              {prospects.slice(0, 3).flatMap(p => p.communications).slice(0, 4).map((comm, i) => (
+                <div key={i} className="flex items-start border-b border-white/10 pb-4">
                   <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mr-3">
                     <Mail size={18} />
                   </div>
                   <div>
                     <p className="font-medium">{comm.subject_text}</p>
                     <p className="text-sm text-white/70">
-                      To: {comm.prospect_profile ? `${comm.prospect_profile.first_name} ${comm.prospect_profile.last_name}` : 'Unknown Client'}
+                      To: {comm.prospect_first_name} {comm.prospect_last_name}
                     </p>
                     <p className="text-xs text-white/50 mt-1">
                       {format(new Date(comm.date_of_communication), 'MMM d, yyyy')}
@@ -263,7 +271,7 @@ const Dashboard = () => {
             </div>
           </CardContent>
           <CardFooter>
-            <Button variant="outline" className="w-full bg-red-600 text-white hover:bg-red-700 border-red-600" onClick={() => navigate('/email-communications')}>
+            <Button variant="outline" className="w-full bg-red-600 text-white hover:bg-red-700 border-red-600" onClick={() => navigate('/communications')}>
               View All Communications
             </Button>
           </CardFooter>

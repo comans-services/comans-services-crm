@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,17 +17,11 @@ import Login from "./pages/Login";
 import KanbanBoard from "./pages/KanbanBoard";
 import AuthGuard from "./components/auth/AuthGuard";
 import TeamManagement from "./pages/TeamManagement";
+import CommunicationHistory from "./pages/CommunicationHistory";
 import TodaysTasks from "./pages/TodaysTasks";
 import EmailCommunicationHistory from "./pages/EmailCommunicationHistory";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: 1
-    },
-  },
-});
+const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -87,6 +82,14 @@ const App = () => (
         <Route path="/settings" element={
           <AuthGuard>
             <Layout><Settings /></Layout>
+          </AuthGuard>
+        } />
+        
+        <Route path="/communications" element={
+          <AuthGuard>
+            <Layout>
+              <CommunicationHistory />
+            </Layout>
           </AuthGuard>
         } />
         

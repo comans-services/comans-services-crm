@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit, Mail, Phone, Building, User, FileText, Upload } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { fetchProspectById, fetchProspectCommunications, fetchProspectTasks, toggleTaskCompletion, getStatusColor, getRecommendedAction } from '@/services/supabaseService';
+import { getMockProspectById } from '@/services/mockDataService';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,27 +19,11 @@ const ClientDetail = () => {
   const [actionItems, setActionItems] = useState<ActionItem[]>([]);
   
   // Fetch client data using React Query
-  const { data: client, isLoading: isLoadingClient } = useQuery({
+  const { data: client, isLoading, error } = useQuery({
     queryKey: ['client', clientId],
-    queryFn: () => fetchProspectById(clientId),
+    queryFn: () => getMockProspectById(clientId),
     enabled: !!clientId,
   });
-
-  // Fetch communications
-  const { data: communications = [], isLoading: isLoadingCommunications } = useQuery({
-    queryKey: ['communications', clientId],
-    queryFn: () => fetchProspectCommunications(clientId),
-    enabled: !!clientId,
-  });
-
-  // Fetch tasks for this client
-  const { data: tasks = [], isLoading: isLoadingTasks } = useQuery({
-    queryKey: ['client-tasks', clientId],
-    queryFn: () => fetchProspectTasks(clientId),
-    enabled: !!clientId,
-  });
-
-  const isLoading = isLoadingClient || isLoadingCommunications || isLoadingTasks;
 
   const handleActionItemsExtracted = (items: ActionItem[]) => {
     setActionItems(prevItems => [...items, ...prevItems]);
@@ -53,7 +37,7 @@ const ClientDetail = () => {
     );
   }
   
-  if (!client) {
+  if (error || !client) {
     return (
       <div className="text-center py-20">
         <h2 className="text-2xl font-bold mb-4">Client Not Found</h2>
@@ -67,14 +51,9 @@ const ClientDetail = () => {
     );
   }
 
-  const statusColor = getStatusColor(client.daysSinceLastContact);
-  const recommendedAction = getRecommendedAction(client.daysSinceLastContact);
-  const statusColorClass = `bg-${statusColor}`;
-  const textColorClass = `text-${statusColor}`;
-
-  // Find the last contact date from prospect_engagement if available
-  const lastContactDate = client.prospect_engagement && 
-    client.prospect_engagement[0]?.last_contact_date;
+  const communications = client.communications || [];
+  const statusColorClass = `bg-${client.statusColor}`;
+  const textColorClass = `text-${client.statusColor}`;
 
   return (
     <div>
@@ -127,7 +106,7 @@ const ClientDetail = () => {
               </div>
               <div>
                 <p className="text-sm text-white/70">Company</p>
-                <p className="font-medium">{client.company ? client.company.charAt(0).toUpperCase() + client.company.slice(1) : 'N/A'}</p>
+                <p className="font-medium">{client.company.charAt(0).toUpperCase() + client.company.slice(1)}</p>
               </div>
             </div>
             
@@ -147,7 +126,7 @@ const ClientDetail = () => {
               </div>
               <div>
                 <p className="text-sm text-white/70">Phone</p>
-                <p className="font-medium">{client.phone || 'N/A'}</p>
+                <p className="font-medium">(555) 123-4567</p>
               </div>
             </div>
           </div>
@@ -157,25 +136,21 @@ const ClientDetail = () => {
           <h2 className="text-xl font-bold mb-4">Status Information</h2>
           <div className="mb-6">
             <p className="text-sm text-white/70 mb-2">Next Recommended Action</p>
-            <p className="text-white/90 font-medium">{recommendedAction}</p>
+            <p className="text-white/90 font-medium">{client.recommendedAction}</p>
           </div>
           
           <div className="mb-6">
             <p className="text-sm text-white/70 mb-2">Last Contact Date</p>
             <p className="font-medium">
-              {lastContactDate
-                ? format(new Date(lastContactDate), 'MMMM d, yyyy') 
+              {client.engagement.last_contact_date 
+                ? format(new Date(client.engagement.last_contact_date), 'MMMM d, yyyy') 
                 : 'No contact recorded'}
             </p>
           </div>
           
           <div className="pt-4 border-t border-white/10">
             <p className="text-sm text-white/70 mb-2">Client Since</p>
-            <p className="font-medium">
-              {client.client_since 
-                ? format(new Date(client.client_since), 'MMMM d, yyyy')
-                : format(new Date(client.created_at), 'MMMM d, yyyy')}
-            </p>
+            <p className="font-medium">{format(new Date(client.created_at), 'MMMM d, yyyy')}</p>
           </div>
         </div>
       </div>
@@ -196,64 +171,6 @@ const ClientDetail = () => {
           </CardContent>
         </Card>
         
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold">Tasks</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {tasks.length > 0 ? (
-              <div className="space-y-3">
-                {tasks.map(task => (
-                  <div 
-                    key={task.id} 
-                    className={`flex items-center justify-between py-2 px-3 rounded-md border-l-4 ${
-                      task.priority === 'high' ? 'border-l-red-500 bg-black/40' : 
-                      task.priority === 'medium' ? 'border-l-yellow-500 bg-black/30' : 
-                      'border-l-green-500 bg-black/20'
-                    } ${task.completed ? 'opacity-60' : ''}`}
-                  >
-                    <div className="flex items-center">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-6 w-6 rounded-full hover:bg-white/20 mr-3"
-                        onClick={() => toggleTaskCompletion(task.id, task.completed)}
-                      >
-                        <div className={`h-5 w-5 rounded-full border border-white/40 ${
-                          task.completed ? 'bg-white/40' : ''
-                        }`}></div>
-                      </Button>
-                      <div>
-                        <p className="font-medium">{task.task_description}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className={`w-2 h-2 rounded-full ${
-                            task.priority === 'high' ? 'bg-red-500' : 
-                            task.priority === 'medium' ? 'bg-yellow-500' : 
-                            'bg-green-500'
-                          }`}></span>
-                          <span className="text-xs text-white/70 capitalize">{task.priority}</span>
-                          <span className="text-xs bg-white/10 px-2 py-0.5 rounded capitalize">
-                            {task.task_type}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-xs text-white/50">
-                        Due: {format(new Date(task.due_date), 'MMM d, yyyy')}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-6">
-                <p className="text-white/70">No tasks found for this client.</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-        
         <Card>
           <CardHeader>
             <CardTitle className="text-xl font-bold">Email Communication History</CardTitle>
@@ -261,8 +178,8 @@ const ClientDetail = () => {
           <CardContent>
             {communications.length > 0 ? (
               <div className="space-y-6">
-                {communications.map((comm) => (
-                  <div key={comm.id} className="border-b border-white/10 pb-6 last:border-0 last:pb-0">
+                {communications.map((comm, index) => (
+                  <div key={index} className="border-b border-white/10 pb-6 last:border-0 last:pb-0">
                     <div className="flex justify-between items-start">
                       <div>
                         <h3 className="font-bold text-lg">{comm.subject_text}</h3>

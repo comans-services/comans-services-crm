@@ -36,7 +36,7 @@ const Sidebar = ({ isExpanded, onToggle }: SidebarProps) => {
     { to: "/", label: "Dashboard", icon: <LayoutDashboard /> },
     { to: "/clients", label: "Clients", icon: <Users /> },
     { to: "/todaystasks", label: "Today's Tasks", icon: <Calendar /> },
-    { to: "/prospect-status", label: "Status of Prospects", icon: <MessageSquare /> },
+    { to: "/communications", label: "Status of Prospects", icon: <MessageSquare /> },
     { to: "/email-communications", label: "Email Communications", icon: <Mail /> },
     { to: "/newsletters", label: "Newsletters", icon: <Mail /> },
     { to: "/team", label: "Team", icon: <UsersRound /> },
