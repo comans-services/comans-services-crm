@@ -1,16 +1,8 @@
+
 import React from 'react';
+import { ActionItem } from '@/services/mockAiService';
 import { format, parseISO } from 'date-fns';
 import { CheckCircle, Clock, AlertCircle } from 'lucide-react';
-
-interface ActionItem {
-  id: string;
-  title: string;
-  description: string;
-  priority: 'high' | 'medium' | 'low';
-  createdAt: string;
-  dueDate: string;
-  completed?: boolean;
-}
 
 interface ActionItemsListProps {
   items: ActionItem[];

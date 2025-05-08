@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Users, Mail, Calendar, TrendingUp, Bell, ArrowRight, CheckCircle } from 'lucide-react';
+import { getMockProspects, ProspectWithEngagement } from '../services/mockDataService';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useQuery } from '@tanstack/react-query';
-import { getProspects } from '@/services/supabase';
-import type { ProspectWithEngagement } from '@/services/types';
 
 const StatCard = ({ title, value, icon, color }: { title: string; value: string | number; icon: React.ReactNode; color: string }) => (
   <div className="card hover-scale">
@@ -44,7 +43,7 @@ const Dashboard = () => {
   // Fetch prospects using React Query
   const { data: prospects = [], isLoading, error } = useQuery({
     queryKey: ['prospects'],
-    queryFn: getProspects,
+    queryFn: getMockProspects,
   });
 
   // Handle "Add Client" button click

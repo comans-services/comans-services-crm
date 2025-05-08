@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { Draggable } from '@hello-pangea/dnd';
-import { ProspectWithEngagement } from '@/services/types';
+import { ProspectWithEngagement } from '@/services/mockDataService';
 
 interface ProspectCardProps {
   prospect: ProspectWithEngagement;
@@ -23,14 +24,14 @@ const ProspectCard: React.FC<ProspectCardProps> = ({ prospect, index }) => {
     // Critical alignment fixes for cursor
     ...(isDragging ? {
       // Remove any margin or padding that could cause offset
-      pointerEvents: 'none' as const,
+      pointerEvents: 'none',
       // Set position to fixed to avoid any offset from parent containers
-      position: 'fixed' as const,
+      position: 'fixed',
       // Top and left are controlled by the library, we need to ensure no additional offset
       zIndex: 9999,
       // Force full opacity and visibility
       opacity: 1,
-      visibility: 'visible' as const,
+      visibility: 'visible',
       // Remove any transform scale that might cause misalignment
       transform: draggableStyle?.transform 
         ? draggableStyle.transform.replace(/scale\([^)]+\)/g, '') 
@@ -39,6 +40,8 @@ const ProspectCard: React.FC<ProspectCardProps> = ({ prospect, index }) => {
       transformOrigin: 'top left',
       // Remove any transition that could make the card lag behind cursor
       transition: 'none',
+      // Allow click-through for a smoother experience
+      pointerEvents: 'none',
       // Ensure width matches original width to prevent resizing during drag
       width: draggableStyle?.width || 'auto',
       cursor: 'grabbing',

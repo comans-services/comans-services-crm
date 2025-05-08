@@ -1,36 +1,85 @@
 
+import { v4 as uuidv4 } from 'uuid';
+
 export interface ActionItem {
   id: string;
   title: string;
   description: string;
-  priority: 'high' | 'medium' | 'low';
-  createdAt: string;
   dueDate: string;
-  completed?: boolean;
+  priority: 'low' | 'medium' | 'high';
+  status: 'todo' | 'in-progress' | 'completed';
+  createdAt: string;
 }
 
-export const extractActionItems = async (documentText: string): Promise<ActionItem[]> => {
-  // This is a mock implementation
-  return [
-    {
-      id: '1',
-      title: 'Schedule follow-up meeting',
-      description: 'Book a follow-up discussion to present proposal details',
-      priority: 'high',
-      createdAt: '2023-04-15T09:00:00Z',
-      dueDate: '2023-04-22T09:00:00Z',
-    },
-    {
-      id: '2',
-      title: 'Send pricing information',
-      description: 'Email updated pricing sheet for enterprise plan',
-      priority: 'medium',
-      createdAt: '2023-04-15T09:00:00Z',
-      dueDate: '2023-04-20T09:00:00Z',
-    }
-  ];
-};
-
-export const generateClientSummary = async (clientData: any): Promise<string> => {
-  return `This client has been with us since ${new Date(clientData.client_since || Date.now()).toLocaleDateString()}. They have shown interest in our premium offerings and have engaged with our sales team ${clientData.communications?.length || 0} times.`;
+// Mock function to simulate AI extracting action items from documents
+export const extractActionItemsFromDocument = (fileName: string): Promise<ActionItem[]> => {
+  return new Promise((resolve) => {
+    // Simulate API call delay
+    setTimeout(() => {
+      // Generate 2-4 random action items
+      const numberOfItems = Math.floor(Math.random() * 3) + 2;
+      const actionItems: ActionItem[] = [];
+      
+      const priorities = ['low', 'medium', 'high'] as const;
+      const statuses = ['todo', 'in-progress', 'completed'] as const;
+      
+      // Sample action item titles based on document type
+      const fileExtension = fileName.split('.').pop()?.toLowerCase();
+      const actionTitles = {
+        pdf: [
+          'Review product specifications',
+          'Schedule follow-up call',
+          'Prepare proposal',
+          'Send case studies',
+          'Discuss budget constraints'
+        ],
+        docx: [
+          'Update contract terms',
+          'Finalize pricing structure',
+          'Address legal concerns',
+          'Share testimonials',
+          'Present ROI analysis'
+        ],
+        xlsx: [
+          'Analyze financial projections',
+          'Compare pricing options',
+          'Review purchase history',
+          'Update forecast model',
+          'Discuss volume discounts'
+        ],
+        default: [
+          'Schedule next meeting',
+          'Send additional information',
+          'Follow up on questions',
+          'Prepare presentation',
+          'Request stakeholder meeting'
+        ]
+      };
+      
+      const titles = actionTitles[fileExtension as keyof typeof actionTitles] || actionTitles.default;
+      
+      // Generate random action items
+      for (let i = 0; i < numberOfItems; i++) {
+        const randomTitleIndex = Math.floor(Math.random() * titles.length);
+        const daysToAdd = Math.floor(Math.random() * 14) + 1;
+        const today = new Date();
+        const dueDate = new Date(today.setDate(today.getDate() + daysToAdd));
+        
+        actionItems.push({
+          id: uuidv4(),
+          title: titles[randomTitleIndex],
+          description: `AI extracted task from ${fileName}. This is a simulated action item that would be created by analyzing the content of the uploaded document.`,
+          dueDate: dueDate.toISOString(),
+          priority: priorities[Math.floor(Math.random() * priorities.length)],
+          status: 'todo',
+          createdAt: new Date().toISOString()
+        });
+        
+        // Remove used title to avoid duplicates
+        titles.splice(randomTitleIndex, 1);
+      }
+      
+      resolve(actionItems);
+    }, 1500); // 1.5 second delay to simulate processing
+  });
 };

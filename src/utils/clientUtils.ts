@@ -1,5 +1,5 @@
 
-import type { ProspectWithEngagement } from '@/services/types';
+import { ProspectProfile, ProspectWithEngagement } from '@/services/mockDataService';
 
 /**
  * Extracts the domain from an email address
