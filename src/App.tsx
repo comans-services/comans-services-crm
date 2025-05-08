@@ -19,7 +19,6 @@ import AuthGuard from "./components/auth/AuthGuard";
 import TeamManagement from "./pages/TeamManagement";
 import TodaysTasks from "./pages/TodaysTasks";
 import EmailCommunicationHistory from "./pages/EmailCommunicationHistory";
-import StatusOfProspect from "./pages/StatusOfProspect";
 
 const queryClient = new QueryClient();
 
@@ -82,14 +81,6 @@ const App = () => (
         <Route path="/settings" element={
           <AuthGuard>
             <Layout><Settings /></Layout>
-          </AuthGuard>
-        } />
-        
-        <Route path="/prospect-status" element={
-          <AuthGuard>
-            <Layout>
-              <StatusOfProspect />
-            </Layout>
           </AuthGuard>
         } />
         
