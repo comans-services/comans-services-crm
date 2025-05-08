@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { getStatusColor, getRecommendedAction, extractDomain, getDomainCompany } from '@/utils/clientUtils';
 import { ProspectProfile, ProspectEngagement, SalesTracking, ProspectWithEngagement } from '@/services/mockDataService';
@@ -369,15 +368,16 @@ export const createTeamMember = async (member: {
   first_name: string;
   last_name: string;
   email: string;
-  role: 'Admin' | 'Salesperson';
+  role: 'admin' | 'salesperson';
 }) => {
+  // Convert role to lowercase to match the database enum type
   const { data, error } = await supabase
     .from('app_user')
     .insert({
       first_name: member.first_name,
       last_name: member.last_name,
       email: member.email,
-      role: member.role
+      role: member.role.toLowerCase() as 'admin' | 'salesperson'
     })
     .select()
     .single();
@@ -397,11 +397,17 @@ export const updateTeamMember = async (id: string, member: {
   first_name?: string;
   last_name?: string;
   email?: string;
-  role?: 'Admin' | 'Salesperson';
+  role?: 'admin' | 'salesperson';
 }) => {
+  // Convert role to lowercase if present
+  const updateData = {
+    ...member,
+    role: member.role ? member.role.toLowerCase() as 'admin' | 'salesperson' : undefined
+  };
+
   const { data, error } = await supabase
     .from('app_user')
-    .update(member)
+    .update(updateData)
     .eq('id', id)
     .select()
     .single();

@@ -36,7 +36,7 @@ interface TeamMemberFormData {
   first_name: string;
   last_name: string;
   email: string;
-  role: 'Admin' | 'Salesperson';
+  role: 'admin' | 'salesperson';
 }
 
 const TeamManagement = () => {
@@ -56,7 +56,7 @@ const TeamManagement = () => {
     first_name: '',
     last_name: '',
     email: '',
-    role: 'Salesperson'
+    role: 'salesperson'
   });
 
   // Setup real-time subscriptions
@@ -111,7 +111,7 @@ const TeamManagement = () => {
       first_name: '',
       last_name: '',
       email: '',
-      role: 'Salesperson'
+      role: 'salesperson'
     });
     setIsDialogOpen(true);
   };
@@ -220,9 +220,10 @@ const TeamManagement = () => {
                       <TableCell className="text-white">{member.email}</TableCell>
                       <TableCell>
                         <span className={`px-2 py-1 rounded-full text-xs ${
-                          member.role === 'Admin' ? 'bg-crm-accent/20 text-crm-accent' : 'bg-blue-500/20 text-blue-500'
+                          member.role === 'admin' ? 'bg-crm-accent/20 text-crm-accent' : 'bg-blue-500/20 text-blue-500'
                         }`}>
-                          {member.role}
+                          {/* Display capitalized role for UI but use lowercase for API */}
+                          {member.role === 'admin' ? 'Admin' : 'Salesperson'}
                         </span>
                       </TableCell>
                       <TableCell className="text-white">
@@ -343,11 +344,11 @@ const TeamManagement = () => {
                 <select
                   id="role"
                   value={currentMember.role}
-                  onChange={(e) => setCurrentMember({...currentMember, role: e.target.value as 'Admin' | 'Salesperson'})}
+                  onChange={(e) => setCurrentMember({...currentMember, role: e.target.value as 'admin' | 'salesperson'})}
                   className="px-3 py-2 bg-[#0f133e] border border-white/20 rounded-md focus:outline-none focus:ring-2 focus:ring-crm-accent/50 text-white"
                 >
-                  <option value="Admin" className="bg-[#0f133e] text-white">Admin</option>
-                  <option value="Salesperson" className="bg-[#0f133e] text-white">Salesperson</option>
+                  <option value="admin" className="bg-[#0f133e] text-white">Admin</option>
+                  <option value="salesperson" className="bg-[#0f133e] text-white">Salesperson</option>
                 </select>
               </div>
             </div>
@@ -366,3 +367,4 @@ const TeamManagement = () => {
 };
 
 export default TeamManagement;
+
