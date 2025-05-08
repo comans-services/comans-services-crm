@@ -46,6 +46,7 @@ export interface Communication {
   prospect_profile?: {
     first_name: string;
     last_name: string;
+    email: string; // Added email field to fix EmailCommunicationHistory errors
   };
 }
 
@@ -65,14 +66,25 @@ export interface Task {
   };
 }
 
+export interface AppUser {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  role: 'admin' | 'salesperson';
+  last_active: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 /* ──────────────────────────────────────────────────────────────── */
 /*  Deal stages                                                    */
 /* ──────────────────────────────────────────────────────────────── */
 
 export const fetchDealStages = async (): Promise<DealStage[]> => {
   const { data, error } = await supabase
-    .from('deal_stage')                 // 🔄 generic removed
-    .select<DealStage>('*')             // 🔄 generic added here
+    .from('deal_stage')
+    .select('*')
     .order('sort_order');
 
   if (error) {
@@ -81,7 +93,7 @@ export const fetchDealStages = async (): Promise<DealStage[]> => {
     return [];
   }
 
-  return data ?? [];
+  return data as DealStage[] ?? [];
 };
 
 /* ──────────────────────────────────────────────────────────────── */
@@ -90,8 +102,8 @@ export const fetchDealStages = async (): Promise<DealStage[]> => {
 
 export const fetchProspects = async (): Promise<Prospect[]> => {
   const { data, error } = await supabase
-    .from('prospect_profile')           // 🔄 generic removed
-    .select<Prospect>(`                // 🔄 generic added here
+    .from('prospect_profile')
+    .select(`
       *,
       prospect_engagement(last_contact_date)
     `);
@@ -103,7 +115,7 @@ export const fetchProspects = async (): Promise<Prospect[]> => {
   }
 
   /* Add UI helpers */
-  return (data ?? []).map((p) => {
+  return (data ?? []).map((p: any) => {
     const lastContactDate =
       p.prospect_engagement?.[0]?.last_contact_date ?? null;
 
@@ -121,6 +133,60 @@ export const fetchProspects = async (): Promise<Prospect[]> => {
       daysSinceLastContact,
     };
   });
+};
+
+/* Get single prospect */
+export const fetchProspectById = async (id: string): Promise<Prospect | null> => {
+  const { data, error } = await supabase
+    .from('prospect_profile')
+    .select(`
+      *,
+      prospect_engagement(last_contact_date)
+    `)
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    console.error('Error fetching prospect:', error);
+    toast.error('Failed to load prospect details');
+    return null;
+  }
+
+  if (!data) return null;
+
+  const lastContactDate =
+    data.prospect_engagement?.[0]?.last_contact_date ?? null;
+
+  const daysSinceLastContact =
+    lastContactDate
+      ? Math.ceil(
+          (Date.now() - new Date(lastContactDate).getTime()) /
+            (1000 * 60 * 60 * 24),
+        )
+      : null;
+
+  return {
+    ...data,
+    dragId: `drag-${data.id}`,
+    daysSinceLastContact,
+  };
+};
+
+/* Get prospects by company */
+export const getProspectsByCompany = async (): Promise<Record<string, Prospect[]>> => {
+  const prospects = await fetchProspects();
+  
+  const companiesMap: Record<string, Prospect[]> = {};
+  
+  prospects.forEach(prospect => {
+    const company = (prospect.company || 'other').toLowerCase();
+    if (!companiesMap[company]) {
+      companiesMap[company] = [];
+    }
+    companiesMap[company].push(prospect);
+  });
+  
+  return companiesMap;
 };
 
 /* ──────────────────────────────────────────────────────────────── */
@@ -157,7 +223,8 @@ export const fetchAllCommunications = async (): Promise<Communication[]> => {
       *,
       prospect_profile (
         first_name,
-        last_name
+        last_name,
+        email
       )
     `)
     .order('date_of_communication', { ascending: false });
@@ -168,7 +235,30 @@ export const fetchAllCommunications = async (): Promise<Communication[]> => {
     return [];
   }
 
-  return data ?? [];
+  return data as Communication[] ?? [];
+};
+
+export const fetchProspectCommunications = async (prospectId: string): Promise<Communication[]> => {
+  const { data, error } = await supabase
+    .from('sales_tracking')
+    .select(`
+      *,
+      prospect_profile (
+        first_name,
+        last_name,
+        email
+      )
+    `)
+    .eq('prospect_id', prospectId)
+    .order('date_of_communication', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching prospect communications:', error);
+    toast.error('Failed to load prospect communications');
+    return [];
+  }
+
+  return data as Communication[] ?? [];
 };
 
 /* ──────────────────────────────────────────────────────────────── */
@@ -193,7 +283,37 @@ export const fetchTasks = async (): Promise<Task[]> => {
     return [];
   }
 
-  return data ?? [];
+  // Ensure the priority is cast to the correct union type
+  return (data as any[] ?? []).map(task => ({
+    ...task,
+    priority: task.priority as 'high' | 'medium' | 'low'
+  }));
+};
+
+export const fetchProspectTasks = async (prospectId: string): Promise<Task[]> => {
+  const { data, error } = await supabase
+    .from('today_tasks')
+    .select(`
+      *,
+      prospect_profile (
+        first_name,
+        last_name
+      )
+    `)
+    .eq('prospect_id', prospectId)
+    .order('due_date', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching prospect tasks:', error);
+    toast.error('Failed to load prospect tasks');
+    return [];
+  }
+
+  // Ensure the priority is cast to the correct union type
+  return (data as any[] ?? []).map(task => ({
+    ...task,
+    priority: task.priority as 'high' | 'medium' | 'low'
+  }));
 };
 
 export const toggleTaskCompletion = async (
@@ -213,4 +333,106 @@ export const toggleTaskCompletion = async (
 
   toast.success(completed ? 'Task marked as completed' : 'Task marked as incomplete');
   return true;
+};
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  Team members                                                   */
+/* ──────────────────────────────────────────────────────────────── */
+
+export const fetchTeamMembers = async (): Promise<AppUser[]> => {
+  const { data, error } = await supabase
+    .from('app_user')
+    .select('*')
+    .order('last_name');
+
+  if (error) {
+    console.error('Error fetching team members:', error);
+    toast.error('Failed to load team members');
+    return [];
+  }
+
+  return data as AppUser[] ?? [];
+};
+
+export const addTeamMember = async (memberData: Omit<AppUser, 'id' | 'created_at' | 'updated_at' | 'last_active'>): Promise<boolean> => {
+  const { error } = await supabase
+    .from('app_user')
+    .insert([memberData]);
+
+  if (error) {
+    console.error('Error adding team member:', error);
+    toast.error('Failed to add team member');
+    return false;
+  }
+
+  toast.success('Team member added successfully');
+  return true;
+};
+
+export const updateTeamMember = async (id: string, memberData: Partial<AppUser>): Promise<boolean> => {
+  const { error } = await supabase
+    .from('app_user')
+    .update(memberData)
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error updating team member:', error);
+    toast.error('Failed to update team member');
+    return false;
+  }
+
+  toast.success('Team member updated successfully');
+  return true;
+};
+
+export const deleteTeamMember = async (id: string): Promise<boolean> => {
+  const { error } = await supabase
+    .from('app_user')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting team member:', error);
+    toast.error('Failed to delete team member');
+    return false;
+  }
+
+  toast.success('Team member deleted successfully');
+  return true;
+};
+
+/* ──────────────────────────────────────────────────────────────── */
+/*  Helper functions                                               */
+/* ──────────────────────────────────────────────────────────────── */
+
+export const getStatusColor = (daysSinceLastContact: number | null): string => {
+  if (daysSinceLastContact === null) {
+    return 'gray-400';
+  }
+  if (daysSinceLastContact <= 2) {
+    return 'green-500';
+  }
+  if (daysSinceLastContact <= 5) {
+    return 'yellow-500';
+  }
+  if (daysSinceLastContact <= 10) {
+    return 'orange-500';
+  }
+  return 'red-500';
+};
+
+export const getRecommendedAction = (daysSinceLastContact: number | null): string => {
+  if (daysSinceLastContact === null) {
+    return 'Initial contact needed';
+  }
+  if (daysSinceLastContact <= 2) {
+    return 'Follow up next week';
+  }
+  if (daysSinceLastContact <= 5) {
+    return 'Follow up this week';
+  }
+  if (daysSinceLastContact <= 10) {
+    return 'Follow up today';
+  }
+  return 'Urgent follow up required';
 };
