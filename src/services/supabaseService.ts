@@ -376,7 +376,8 @@ export const setupRealTimeSubscription = (
       {
         event: event,
         schema: 'public',
-        table: table
+        table: table,
+        type: 'postgres_changes'
       },
       (payload) => {
         callback(payload);
