@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Draggable } from '@hello-pangea/dnd';
-import { ProspectWithEngagement } from '@/services/mockDataService';
+import { ProspectWithEngagement } from '@/services/types';
 
 interface ProspectCardProps {
   prospect: ProspectWithEngagement;

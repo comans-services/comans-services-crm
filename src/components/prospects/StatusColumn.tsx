@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { Droppable } from '@hello-pangea/dnd';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ProspectWithEngagement } from '@/services/mockDataService';
+import { ProspectWithEngagement } from '@/services/types';
 import ProspectCard from './ProspectCard';
 
 interface StatusColumnProps {

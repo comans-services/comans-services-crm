@@ -1,12 +1,11 @@
-
 import React, { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getProspects, setupRealTimeSubscription } from '@/services/supabaseService';
+import { getProspects, setupRealTimeSubscription } from '@/services/supabase';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { ProspectWithEngagement } from '@/services/mockDataService';
+import { ProspectWithEngagement } from '@/services/types';
 
 // Priority indicator component
 const PriorityIndicator = ({ priority }: { priority: 'high' | 'medium' | 'low' }) => {
