@@ -2,7 +2,6 @@
 import React from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import { ProspectWithEngagement } from '@/services/supabaseService';
-import { User } from 'lucide-react';
 
 interface ProspectCardProps {
   prospect: ProspectWithEngagement;
@@ -10,9 +9,6 @@ interface ProspectCardProps {
 }
 
 const ProspectCard: React.FC<ProspectCardProps> = ({ prospect, index }) => {
-  // Generate a code-like ID from the prospect information
-  const codeId = `COM-${prospect.id.substring(0, 2)}${index + 1}`;
-  
   return (
     <Draggable 
       key={prospect.dragId || prospect.id} 
@@ -24,40 +20,44 @@ const ProspectCard: React.FC<ProspectCardProps> = ({ prospect, index }) => {
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          className={`rounded-md ${
+          className={`rounded-md mb-3 ${
             snapshot.isDragging 
-              ? 'bg-white/10 shadow-lg border border-blue-500/50' 
-              : 'bg-black/40 border border-white/10 hover:border-white/30'
+              ? 'bg-[#1C1F41] shadow-lg border border-blue-500/50' 
+              : 'bg-[#111331] border border-[#2A2E52] hover:border-white/20'
           } transition-all`}
         >
-          <div className="p-3">
-            <div className="text-sm font-medium mb-2">
-              {prospect.company || 'Unknown Company'}
+          <div className="p-4">
+            <div className="text-white font-medium mb-1">
+              {prospect.first_name} {prospect.last_name}
             </div>
             
-            <div className="flex items-center mb-3">
-              <div className="bg-blue-500/20 text-blue-300 text-xs px-2 py-0.5 rounded flex items-center">
-                <span>{codeId}</span>
-              </div>
-              {prospect.daysSinceLastContact !== null && (
-                <div className="ml-auto text-xs text-white/50">
-                  {prospect.daysSinceLastContact}d
-                </div>
-              )}
+            <div className="text-white/50 text-sm mb-3">
+              {prospect.company || 'No company'}
             </div>
             
-            <div className="flex items-center justify-between">
-              <div className="text-xs text-white/70 flex items-center">
-                {prospect.first_name} {prospect.last_name}
-              </div>
-              
-              <div className="flex items-center">
-                <div className={`w-2 h-2 rounded-full bg-${prospect.statusColor}`}></div>
-                <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-xs text-white font-medium ml-2">
-                  JC
+            {prospect.daysSinceLastContact !== null && (
+              <div className="flex items-center justify-between">
+                <div className="bg-[#1D1F3B] text-white/70 text-xs px-2 py-1 rounded">
+                  {prospect.daysSinceLastContact === 1
+                    ? '1 day ago'
+                    : `${prospect.daysSinceLastContact} days ago`}
                 </div>
+                
+                <div className={`w-2.5 h-2.5 rounded-full bg-${
+                  prospect.daysSinceLastContact <= 2
+                    ? 'green-500'
+                    : prospect.daysSinceLastContact <= 5
+                    ? 'yellow-500'
+                    : 'orange-500'
+                }`}></div>
               </div>
-            </div>
+            )}
+            
+            {prospect.daysSinceLastContact === null && (
+              <div className="bg-[#1D1F3B] text-white/70 text-xs px-2 py-1 rounded w-fit">
+                New lead
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -7,57 +7,40 @@ import DealStageColumn from './DealStageColumn';
 
 interface ProspectDealBoardProps {
   prospects: ProspectWithEngagement[];
-  dealStages: Array<{
-    id: string;
-    name: string;
-    sort_order: number;
-  }>;
+  dealStages: any[];
   isLoading: boolean;
-  onCreateLead: () => void;
 }
 
-type DealStageColumn = {
+type DealColumn = {
   id: string;
   title: string;
   prospects: ProspectWithEngagement[];
 }
 
-const ProspectDealBoard: React.FC<ProspectDealBoardProps> = ({ 
-  prospects, 
-  dealStages, 
-  isLoading, 
-  onCreateLead 
-}) => {
-  const [columns, setColumns] = useState<DealStageColumn[]>([]);
+const ProspectDealBoard: React.FC<ProspectDealBoardProps> = ({ prospects, dealStages, isLoading }) => {
+  const [columns, setColumns] = useState<DealColumn[]>([]);
   
-  // Create columns based on deal stages
+  // Initialize columns based on deal stages
   useEffect(() => {
-    if (dealStages.length > 0) {
-      // Sort deal stages by sort_order
-      const sortedDealStages = [...dealStages].sort((a, b) => a.sort_order - b.sort_order);
-      
-      // Create initial columns based on stages
-      const initialColumns: DealStageColumn[] = sortedDealStages.map((stage) => ({
+    if (dealStages && dealStages.length > 0) {
+      const initialColumns = dealStages.map(stage => ({
         id: stage.id,
-        title: stage.name.toUpperCase(),
+        title: stage.name,
         prospects: []
       }));
       
       setColumns(initialColumns);
     }
   }, [dealStages]);
-
-  // Ensure each prospect has a unique draggable ID
-  const ensureUniqueIds = (prospects: ProspectWithEngagement[]): ProspectWithEngagement[] => {
-    return prospects.map(prospect => {
-      return { ...prospect, dragId: `drag-${prospect.id}` };
-    });
-  };
-
-  // Distribute prospects among deal stages
+  
+  // Ensure each prospect has a unique draggable ID and distribute them among columns
   useEffect(() => {
     if (prospects.length > 0 && columns.length > 0) {
-      const uniqueProspects = ensureUniqueIds(prospects);
+      const uniqueProspects = prospects.map(prospect => ({
+        ...prospect,
+        dragId: `drag-${prospect.id}`
+      }));
+      
       const newColumns = [...columns];
       
       // Reset all columns
@@ -70,28 +53,24 @@ const ProspectDealBoard: React.FC<ProspectDealBoardProps> = ({
         const dealStageId = prospect.deal_stage_id;
         
         if (dealStageId) {
-          // Find the column matching the stage ID
+          // Find the column matching the deal stage ID
           const column = newColumns.find(col => col.id === dealStageId);
           if (column) {
             column.prospects.push(prospect);
-          } else {
+          } else if (newColumns[0]) {
             // If no matching column, put in first column
-            if (newColumns[0]) {
-              newColumns[0].prospects.push(prospect);
-            }
-          }
-        } else {
-          // If no stage ID, put in first column
-          if (newColumns[0]) {
             newColumns[0].prospects.push(prospect);
           }
+        } else if (newColumns[0]) {
+          // If no deal stage ID, put in first column
+          newColumns[0].prospects.push(prospect);
         }
       });
       
       setColumns(newColumns);
     }
   }, [prospects, columns.length]);
-  
+
   const handleDragEnd = async (result: any) => {
     const { destination, source, draggableId } = result;
     
@@ -154,13 +133,17 @@ const ProspectDealBoard: React.FC<ProspectDealBoardProps> = ({
   };
   
   if (isLoading) {
-    return <div className="card p-8 text-center">Loading prospects...</div>;
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-white/70">Loading prospects...</div>
+      </div>
+    );
   }
   
   return (
     <div className="overflow-x-auto pb-4">
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="flex gap-4" style={{ minWidth: 'max-content' }}>
+        <div className="flex gap-5" style={{ minWidth: 'max-content' }}>
           {columns.map(column => (
             <DealStageColumn
               key={column.id}
@@ -168,7 +151,6 @@ const ProspectDealBoard: React.FC<ProspectDealBoardProps> = ({
               title={column.title}
               prospects={column.prospects}
               count={column.prospects.length}
-              onCreateLead={column.id === columns[0]?.id ? onCreateLead : undefined}
             />
           ))}
         </div>
