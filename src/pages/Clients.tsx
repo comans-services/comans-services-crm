@@ -20,16 +20,34 @@ const Clients = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // Fetch clients data using React Query
-  const { data: clients = [], isLoading: isLoadingClients } = useQuery({
+  // Fetch clients data using React Query with additional options and debug
+  const { data: clients = [], isLoading: isLoadingClients, error: clientsError } = useQuery({
     queryKey: ['prospects'],
     queryFn: fetchProspects,
+    staleTime: 0, // Don't use cache, always fetch fresh data
+    retry: 3, // Retry failed requests up to 3 times
+    onSuccess: (data) => {
+      console.log('Successfully fetched clients data:', data);
+    },
+    onError: (err) => {
+      console.error('Error fetching clients data:', err);
+      toast.error('Failed to load clients data');
+    }
   });
   
   // Fetch companies data using React Query
-  const { data: companiesMap = {}, isLoading: isLoadingCompanies } = useQuery({
+  const { data: companiesMap = {}, isLoading: isLoadingCompanies, error: companiesError } = useQuery({
     queryKey: ['companies'],
     queryFn: getProspectsByCompany,
+    staleTime: 0, // Don't use cache
+    retry: 3, // Retry failed requests
+    onSuccess: (data) => {
+      console.log('Successfully fetched companies data:', data);
+    },
+    onError: (err) => {
+      console.error('Error fetching companies data:', err);
+      toast.error('Failed to load companies data');
+    }
   });
 
   // Set up real-time subscription to prospect_profile table
@@ -61,21 +79,48 @@ const Clients = () => {
       )
       .subscribe();
 
+    // Log when the subscription is set up
+    console.log('Supabase real-time channel subscribed');
+
+    // Debug the Supabase connection on component mount
+    supabase.auth.getSession().then(({ data }) => {
+      console.log('Current Supabase session:', data.session ? 'Active' : 'None');
+    });
+
     // Cleanup subscription when component unmounts
     return () => {
       supabase.removeChannel(channel);
+      console.log('Supabase real-time channel unsubscribed');
     };
   }, [queryClient]);
 
+  // Log when filtered clients change
   const filteredClients = clients.filter(client => 
     client.first_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     client.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (client.company || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
+  
+  useEffect(() => {
+    console.log('Filtered clients:', filteredClients);
+    console.log('Total clients count:', clients.length);
+  }, [filteredClients, clients]);
 
   // Custom block styling for AI Generated Action Items and Email Communication History
   const blackBoxStyle = "bg-black text-white border border-white/20 rounded-crm shadow-lg p-6";
+
+  // Add error handling UI
+  if (clientsError) {
+    return <div className="card p-6">
+      <h2 className="text-xl font-bold text-red-500 mb-2">Error loading clients</h2>
+      <p className="text-white/70">{clientsError.message || 'Unknown error occurred'}</p>
+      <Button onClick={() => queryClient.invalidateQueries({ queryKey: ['prospects'] })} 
+        className="mt-4">
+        Retry
+      </Button>
+    </div>;
+  }
 
   return (
     <div>
@@ -112,62 +157,71 @@ const Clients = () => {
             {isLoadingClients ? (
               <div className="p-8 text-center">Loading clients...</div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-white/20">
-                      <th className="text-left py-4 px-4 font-medium">Status</th>
-                      <th className="text-left py-4 px-4 font-medium">Name</th>
-                      <th className="text-left py-4 px-4 font-medium">Company</th>
-                      <th className="text-left py-4 px-4 font-medium">Email</th>
-                      <th className="text-left py-4 px-4 font-medium">Last Contact</th>
-                      <th className="text-left py-4 px-4 font-medium">Action Needed</th>
-                      <th className="text-right py-4 px-4 font-medium">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredClients.map((client) => {
-                      const statusColorClass = `bg-${getStatusColor(client.daysSinceLastContact)}`;
-                      return (
-                        <tr key={client.id} className="border-b border-white/10 hover:bg-white/5 transition-colors">
-                          <td className="py-4 px-4">
-                            <div className={`w-3 h-3 rounded-full ${statusColorClass}`} title={`${client.daysSinceLastContact} days since last contact`}></div>
-                          </td>
-                          <td className="py-4 px-4">
-                            <Link to={`/clients/${client.id}`} className="font-medium hover:text-crm-accent transition-colors">
-                              {client.first_name} {client.last_name}
-                            </Link>
-                          </td>
-                          <td className="py-4 px-4">{client.company ? client.company.charAt(0).toUpperCase() + client.company.slice(1) : 'N/A'}</td>
-                          <td className="py-4 px-4">{client.email}</td>
-                          <td className="py-4 px-4">
-                            {client.daysSinceLastContact !== null 
-                              ? `${client.daysSinceLastContact} days ago` 
-                              : 'No contact'}
-                          </td>
-                          <td className="py-4 px-4">
-                            {client.daysSinceLastContact === null ? 'Initial contact needed' :
-                              client.daysSinceLastContact <= 2 ? 'Follow up next week' :
-                              client.daysSinceLastContact <= 5 ? 'Follow up this week' :
-                              client.daysSinceLastContact <= 10 ? 'Follow up today' :
-                              'Urgent follow up required'}
-                          </td>
-                          <td className="py-4 px-4 text-right">
-                            <div className="flex justify-end gap-2">
-                              <button className="p-1.5 rounded-full hover:bg-white/10 transition-colors">
-                                <Edit size={16} />
-                              </button>
-                              <button className="p-1.5 rounded-full hover:bg-white/10 transition-colors">
-                                <MoreVertical size={16} />
-                              </button>
-                            </div>
-                          </td>
+              <>
+                {filteredClients.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <p className="text-white/70 mb-4">No clients found</p>
+                    <Link to="/clients/new" className="btn-primary inline-block">Add your first client</Link>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-white/20">
+                          <th className="text-left py-4 px-4 font-medium">Status</th>
+                          <th className="text-left py-4 px-4 font-medium">Name</th>
+                          <th className="text-left py-4 px-4 font-medium">Company</th>
+                          <th className="text-left py-4 px-4 font-medium">Email</th>
+                          <th className="text-left py-4 px-4 font-medium">Last Contact</th>
+                          <th className="text-left py-4 px-4 font-medium">Action Needed</th>
+                          <th className="text-right py-4 px-4 font-medium">Actions</th>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                      </thead>
+                      <tbody>
+                        {filteredClients.map((client) => {
+                          const statusColorClass = `bg-${getStatusColor(client.daysSinceLastContact)}`;
+                          return (
+                            <tr key={client.id} className="border-b border-white/10 hover:bg-white/5 transition-colors">
+                              <td className="py-4 px-4">
+                                <div className={`w-3 h-3 rounded-full ${statusColorClass}`} title={`${client.daysSinceLastContact} days since last contact`}></div>
+                              </td>
+                              <td className="py-4 px-4">
+                                <Link to={`/clients/${client.id}`} className="font-medium hover:text-crm-accent transition-colors">
+                                  {client.first_name} {client.last_name}
+                                </Link>
+                              </td>
+                              <td className="py-4 px-4">{client.company ? client.company.charAt(0).toUpperCase() + client.company.slice(1) : 'N/A'}</td>
+                              <td className="py-4 px-4">{client.email}</td>
+                              <td className="py-4 px-4">
+                                {client.daysSinceLastContact !== null 
+                                  ? `${client.daysSinceLastContact} days ago` 
+                                  : 'No contact'}
+                              </td>
+                              <td className="py-4 px-4">
+                                {client.daysSinceLastContact === null ? 'Initial contact needed' :
+                                  client.daysSinceLastContact <= 2 ? 'Follow up next week' :
+                                  client.daysSinceLastContact <= 5 ? 'Follow up this week' :
+                                  client.daysSinceLastContact <= 10 ? 'Follow up today' :
+                                  'Urgent follow up required'}
+                              </td>
+                              <td className="py-4 px-4 text-right">
+                                <div className="flex justify-end gap-2">
+                                  <button className="p-1.5 rounded-full hover:bg-white/10 transition-colors">
+                                    <Edit size={16} />
+                                  </button>
+                                  <button className="p-1.5 rounded-full hover:bg-white/10 transition-colors">
+                                    <MoreVertical size={16} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </TabsContent>
@@ -175,6 +229,11 @@ const Clients = () => {
         <TabsContent value="company" className="mt-6">
           {isLoadingCompanies ? (
             <div className="card p-8 text-center">Loading companies...</div>
+          ) : Object.keys(companiesMap).length === 0 ? (
+            <div className="card p-8 text-center">
+              <p className="text-white/70 mb-4">No companies found</p>
+              <Link to="/clients/new" className="btn-primary inline-block">Add your first client</Link>
+            </div>
           ) : (
             <div className="space-y-6">
               {Object.entries(companiesMap).map(([companyName, companyClients], index) => (

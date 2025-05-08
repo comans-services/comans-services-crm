@@ -106,6 +106,7 @@ export const fetchDealStages = async (): Promise<DealStage[]> => {
 /* ──────────────────────────────────────────────────────────────── */
 
 export const fetchProspects = async (): Promise<Prospect[]> => {
+  console.log('Fetching prospects from Supabase...');
   const { data, error } = await supabase
     .from('prospect_profile')
     .select(`
@@ -119,8 +120,15 @@ export const fetchProspects = async (): Promise<Prospect[]> => {
     return [];
   }
 
+  console.log('Raw prospects data from Supabase:', data);
+  
+  if (!data || data.length === 0) {
+    console.log('No prospects found in the database');
+    return [];
+  }
+
   /* Add UI helpers */
-  return (data ?? []).map((p: any) => {
+  const processedData = (data ?? []).map((p: any) => {
     const lastContactDate =
       p.prospect_engagement?.[0]?.last_contact_date ?? null;
 
@@ -138,6 +146,9 @@ export const fetchProspects = async (): Promise<Prospect[]> => {
       daysSinceLastContact,
     };
   });
+  
+  console.log('Processed prospects data:', processedData);
+  return processedData;
 };
 
 /* Get single prospect */
@@ -179,6 +190,7 @@ export const fetchProspectById = async (id: string): Promise<Prospect | null> =>
 
 /* Get prospects by company */
 export const getProspectsByCompany = async (): Promise<Record<string, Prospect[]>> => {
+  console.log('Fetching prospects grouped by company...');
   const prospects = await fetchProspects();
   
   const companiesMap: Record<string, Prospect[]> = {};
@@ -191,6 +203,7 @@ export const getProspectsByCompany = async (): Promise<Record<string, Prospect[]
     companiesMap[company].push(prospect);
   });
   
+  console.log('Companies data:', Object.keys(companiesMap));
   return companiesMap;
 };
 
