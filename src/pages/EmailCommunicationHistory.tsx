@@ -24,8 +24,9 @@ const EmailCommunicationHistory = () => {
   // Filter communications based on search term
   const filteredCommunications = communications.filter(comm => 
     comm.subject_text.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (comm.prospect_profile?.first_name + ' ' + comm.prospect_profile?.last_name).toLowerCase().includes(searchTerm.toLowerCase()) ||
-    comm.prospect_profile?.email.toLowerCase().includes(searchTerm.toLowerCase())
+    (comm.prospect_profile && 
+      (`${comm.prospect_profile.first_name} ${comm.prospect_profile.last_name}`).toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (comm.prospect_profile && comm.prospect_profile.email.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const handleEmailClick = (communication: any) => {

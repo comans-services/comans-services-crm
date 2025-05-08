@@ -321,6 +321,50 @@ export type Database = {
           },
         ]
       }
+      today_tasks: {
+        Row: {
+          completed: boolean
+          created_at: string
+          due_date: string
+          id: string
+          priority: string
+          prospect_id: string
+          task_description: string
+          task_type: string
+          updated_at: string
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          due_date?: string
+          id?: string
+          priority: string
+          prospect_id: string
+          task_description: string
+          task_type: string
+          updated_at?: string
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          due_date?: string
+          id?: string
+          priority?: string
+          prospect_id?: string
+          task_description?: string
+          task_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "today_tasks_prospect_id_fkey"
+            columns: ["prospect_id"]
+            isOneToOne: false
+            referencedRelation: "prospect_profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_activity: {
         Row: {
           activity_detail: Json | null

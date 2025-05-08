@@ -7,7 +7,7 @@ import { toast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useQuery } from '@tanstack/react-query';
-import { fetchProspects, fetchAllCommunications, getStatusColor, getRecommendedAction } from '@/services/supabaseService';
+import { fetchProspects, fetchAllCommunications, fetchTasks, toggleTaskCompletion } from '@/services/supabaseService';
 
 const StatCard = ({ title, value, icon, color }: { title: string; value: string | number; icon: React.ReactNode; color: string }) => (
   <div className="card hover-scale">
@@ -40,6 +40,7 @@ const PriorityIndicator = ({ priority }: { priority: 'high' | 'medium' | 'low' }
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   
   // Fetch prospects using React Query
   const { data: prospects = [], isLoading: isLoadingProspects } = useQuery({
@@ -53,7 +54,13 @@ const Dashboard = () => {
     queryFn: fetchAllCommunications,
   });
 
-  const isLoading = isLoadingProspects || isLoadingCommunications;
+  // Fetch tasks using React Query
+  const { data: tasks = [], isLoading: isLoadingTasks } = useQuery({
+    queryKey: ['tasks'],
+    queryFn: fetchTasks,
+  });
+
+  const isLoading = isLoadingProspects || isLoadingCommunications || isLoadingTasks;
 
   // Handle "Add Client" button click
   const handleAddClient = () => {
@@ -62,6 +69,17 @@ const Dashboard = () => {
       title: "New Client",
       description: "Starting new client creation process",
     });
+  };
+
+  // Handle task completion toggle
+  const handleTaskCompletion = async (taskId: string, completed: boolean, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    const success = await toggleTaskCompletion(taskId, !completed);
+    if (success) {
+      // Invalidate tasks query to refetch data
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    }
   };
 
   if (isLoading) {
@@ -73,50 +91,19 @@ const Dashboard = () => {
   const todayFollowups = prospects.filter(p => p.daysSinceLastContact !== null && p.daysSinceLastContact > 5 && p.daysSinceLastContact <= 10).length;
   const thisWeekFollowups = prospects.filter(p => p.daysSinceLastContact !== null && p.daysSinceLastContact > 2 && p.daysSinceLastContact <= 5).length;
 
-  // Generate prioritized to-do list for today
-  const generatePrioritizedTasks = (prospects: any[]) => {
-    const tasks = [];
-    
-    // Add urgent follow-ups as high priority
-    const urgentProspects = prospects.filter(p => p.daysSinceLastContact !== null && p.daysSinceLastContact > 10);
-    for (const prospect of urgentProspects) {
-      tasks.push({
-        id: `task-urgent-${prospect.id}`,
-        type: 'follow-up',
-        prospect,
-        priority: 'high' as const,
-        description: `Contact ${prospect.first_name} ${prospect.last_name} (${prospect.daysSinceLastContact} days since last contact)`
-      });
-    }
-    
-    // Add today's follow-ups as medium priority
-    const todayProspects = prospects.filter(p => p.daysSinceLastContact !== null && p.daysSinceLastContact > 5 && p.daysSinceLastContact <= 10);
-    for (const prospect of todayProspects) {
-      tasks.push({
-        id: `task-today-${prospect.id}`,
-        type: 'follow-up',
-        prospect,
-        priority: 'medium' as const,
-        description: `Follow up with ${prospect.first_name} ${prospect.last_name} from ${prospect.company || 'Unknown Company'}`
-      });
-    }
-    
-    // Add weekly follow-ups as low priority
-    const weeklyProspects = prospects.filter(p => p.daysSinceLastContact !== null && p.daysSinceLastContact > 2 && p.daysSinceLastContact <= 5);
-    for (const prospect of weeklyProspects.slice(0, 3)) { // Limit to 3 weekly tasks for now
-      tasks.push({
-        id: `task-weekly-${prospect.id}`,
-        type: 'check-in',
-        prospect,
-        priority: 'low' as const,
-        description: `Schedule check-in with ${prospect.first_name} ${prospect.last_name}`
-      });
-    }
-    
-    return tasks;
-  };
-  
-  const prioritizedTasks = generatePrioritizedTasks(prospects);
+  // Get high priority tasks for dashboard
+  const prioritizedTasks = tasks
+    .filter(task => !task.completed)
+    .sort((a, b) => {
+      // Sort by priority first
+      const priorityOrder = { high: 0, medium: 1, low: 2 };
+      const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
+      if (priorityDiff !== 0) return priorityDiff;
+      
+      // Then by due date
+      return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+    })
+    .slice(0, 5); // Only get the top 5 tasks for display
 
   // Get unique companies for companies section
   const companies = Array.from(new Set(prospects.map(p => p.company))).filter(Boolean);
@@ -180,7 +167,7 @@ const Dashboard = () => {
                     task.priority === 'medium' ? 'border-l-yellow-500 bg-black/30' : 
                     'border-l-green-500 bg-black/20'
                   }`}
-                  onClick={() => navigate(`/clients/${task.prospect.id}`)}
+                  onClick={() => navigate(`/clients/${task.prospect_id}`)}
                 >
                   <div className="flex items-center gap-4">
                     <div className="min-w-[24px]">
@@ -188,35 +175,30 @@ const Dashboard = () => {
                         variant="ghost" 
                         size="icon" 
                         className="h-6 w-6 rounded-full hover:bg-white/20"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toast({
-                            title: "Task completed",
-                            description: `Marked "${task.description}" as done`,
-                          });
-                        }}
+                        onClick={(e) => handleTaskCompletion(task.id, task.completed, e)}
                       >
-                        <div className="h-5 w-5 rounded-full border border-white/40"></div>
+                        <div className={`h-5 w-5 rounded-full border border-white/40 ${
+                          task.completed ? 'bg-white/40' : ''
+                        }`}></div>
                       </Button>
                     </div>
                     <div>
-                      <p className="font-medium mb-1">{task.description}</p>
+                      <p className="font-medium mb-1">{task.task_description}</p>
                       <div className="flex items-center gap-4">
                         <PriorityIndicator priority={task.priority} />
-                        {task.type === 'follow-up' && (
-                          <span className="text-xs bg-white/10 px-2 py-1 rounded">Follow-up</span>
-                        )}
-                        {task.type === 'check-in' && (
-                          <span className="text-xs bg-white/10 px-2 py-1 rounded">Check-in</span>
-                        )}
+                        <span className="text-xs bg-white/10 px-2 py-1 rounded capitalize">
+                          {task.task_type}
+                        </span>
                       </div>
                     </div>
                   </div>
                   
                   <div className="text-right">
-                    <p className="text-sm text-white/70">{task.prospect.company || 'No company'}</p>
+                    <p className="text-sm text-white/70">
+                      {task.prospect_profile?.first_name} {task.prospect_profile?.last_name}
+                    </p>
                     <p className="text-xs text-white/50">
-                      {task.prospect.daysSinceLastContact} days ago
+                      Due: {new Date(task.due_date).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
@@ -282,7 +264,7 @@ const Dashboard = () => {
             </div>
           </CardContent>
           <CardFooter>
-            <Button variant="outline" className="w-full bg-red-600 text-white hover:bg-red-700 border-red-600" onClick={() => navigate('/communications')}>
+            <Button variant="outline" className="w-full bg-red-600 text-white hover:bg-red-700 border-red-600" onClick={() => navigate('/email-communications')}>
               View All Communications
             </Button>
           </CardFooter>

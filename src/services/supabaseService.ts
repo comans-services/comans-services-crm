@@ -21,6 +21,7 @@ export interface ProspectProfile {
   updated_at: string;
   client_since?: string;
   daysSinceLastContact?: number | null;
+  prospect_engagement?: Array<{ last_contact_date: string | null }>;
 }
 
 export interface Communication {
@@ -32,6 +33,24 @@ export interface Communication {
   date_of_communication: string;
   created_at: string;
   updated_at: string;
+  prospect_profile?: {
+    first_name: string;
+    last_name: string;
+    email: string;
+  };
+}
+
+export interface Task {
+  id: string;
+  prospect_id: string;
+  task_description: string;
+  priority: 'high' | 'medium' | 'low';
+  task_type: 'follow-up' | 'check-in' | 'meeting' | 'other';
+  due_date: string;
+  completed: boolean;
+  created_at: string;
+  updated_at: string;
+  prospect_profile?: ProspectProfile;
 }
 
 /**
@@ -198,7 +217,7 @@ export const fetchAllCommunications = async (): Promise<Communication[]> => {
       .from('sales_tracking')
       .select(`
         *,
-        prospect_profile!sales_tracking_prospect_id_fkey(first_name, last_name, email)
+        prospect_profile:prospect_id(first_name, last_name, email)
       `)
       .order('date_of_communication', { ascending: false });
     
@@ -239,6 +258,108 @@ export const createProspectCommunication = async (communicationData: {
     return true;
   } catch (error) {
     console.error("Error in createProspectCommunication:", error);
+    return false;
+  }
+};
+
+/**
+ * Fetch tasks from the today_tasks table
+ */
+export const fetchTasks = async (): Promise<Task[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('today_tasks')
+      .select(`
+        *,
+        prospect_profile:prospect_id(first_name, last_name, email, company)
+      `)
+      .order('due_date', { ascending: true });
+    
+    if (error) {
+      console.error("Error fetching tasks:", error);
+      toast.error('Failed to load tasks');
+      return [];
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error("Error in fetchTasks:", error);
+    return [];
+  }
+};
+
+/**
+ * Fetch tasks for a specific prospect
+ */
+export const fetchProspectTasks = async (prospectId: string): Promise<Task[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('today_tasks')
+      .select('*')
+      .eq('prospect_id', prospectId)
+      .order('due_date', { ascending: true });
+    
+    if (error) {
+      console.error("Error fetching prospect tasks:", error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error("Error in fetchProspectTasks:", error);
+    return [];
+  }
+};
+
+/**
+ * Toggle task completion status
+ */
+export const toggleTaskCompletion = async (taskId: string, completed: boolean): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('today_tasks')
+      .update({ completed })
+      .eq('id', taskId);
+    
+    if (error) {
+      console.error("Error updating task completion:", error);
+      toast.error('Failed to update task');
+      return false;
+    }
+    
+    toast.success(`Task marked as ${completed ? 'complete' : 'incomplete'}`);
+    return true;
+  } catch (error) {
+    console.error("Error in toggleTaskCompletion:", error);
+    return false;
+  }
+};
+
+/**
+ * Create a new task
+ */
+export const createTask = async (taskData: {
+  prospect_id: string;
+  task_description: string;
+  priority: 'high' | 'medium' | 'low';
+  task_type: 'follow-up' | 'check-in' | 'meeting' | 'other';
+  due_date?: string;
+}): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('today_tasks')
+      .insert([taskData]);
+    
+    if (error) {
+      console.error("Error creating task:", error);
+      toast.error('Failed to create task');
+      return false;
+    }
+    
+    toast.success('Task created successfully');
+    return true;
+  } catch (error) {
+    console.error("Error in createTask:", error);
     return false;
   }
 };

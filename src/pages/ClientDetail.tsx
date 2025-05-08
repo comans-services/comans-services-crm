@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit, Mail, Phone, Building, User, FileText, Upload } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { fetchProspectById, fetchProspectCommunications, getStatusColor, getRecommendedAction } from '@/services/supabaseService';
+import { fetchProspectById, fetchProspectCommunications, fetchProspectTasks, toggleTaskCompletion, getStatusColor, getRecommendedAction } from '@/services/supabaseService';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,7 +32,14 @@ const ClientDetail = () => {
     enabled: !!clientId,
   });
 
-  const isLoading = isLoadingClient || isLoadingCommunications;
+  // Fetch tasks for this client
+  const { data: tasks = [], isLoading: isLoadingTasks } = useQuery({
+    queryKey: ['client-tasks', clientId],
+    queryFn: () => fetchProspectTasks(clientId),
+    enabled: !!clientId,
+  });
+
+  const isLoading = isLoadingClient || isLoadingCommunications || isLoadingTasks;
 
   const handleActionItemsExtracted = (items: ActionItem[]) => {
     setActionItems(prevItems => [...items, ...prevItems]);
@@ -64,6 +71,10 @@ const ClientDetail = () => {
   const recommendedAction = getRecommendedAction(client.daysSinceLastContact);
   const statusColorClass = `bg-${statusColor}`;
   const textColorClass = `text-${statusColor}`;
+
+  // Find the last contact date from prospect_engagement if available
+  const lastContactDate = client.prospect_engagement && 
+    client.prospect_engagement[0]?.last_contact_date;
 
   return (
     <div>
@@ -152,8 +163,8 @@ const ClientDetail = () => {
           <div className="mb-6">
             <p className="text-sm text-white/70 mb-2">Last Contact Date</p>
             <p className="font-medium">
-              {client.prospect_engagement && client.prospect_engagement[0]?.last_contact_date 
-                ? format(new Date(client.prospect_engagement[0].last_contact_date), 'MMMM d, yyyy') 
+              {lastContactDate
+                ? format(new Date(lastContactDate), 'MMMM d, yyyy') 
                 : 'No contact recorded'}
             </p>
           </div>
@@ -182,6 +193,64 @@ const ClientDetail = () => {
           </CardHeader>
           <CardContent>
             <ActionItemsList items={actionItems} />
+          </CardContent>
+        </Card>
+        
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="text-xl font-bold">Tasks</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {tasks.length > 0 ? (
+              <div className="space-y-3">
+                {tasks.map(task => (
+                  <div 
+                    key={task.id} 
+                    className={`flex items-center justify-between py-2 px-3 rounded-md border-l-4 ${
+                      task.priority === 'high' ? 'border-l-red-500 bg-black/40' : 
+                      task.priority === 'medium' ? 'border-l-yellow-500 bg-black/30' : 
+                      'border-l-green-500 bg-black/20'
+                    } ${task.completed ? 'opacity-60' : ''}`}
+                  >
+                    <div className="flex items-center">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-6 w-6 rounded-full hover:bg-white/20 mr-3"
+                        onClick={() => toggleTaskCompletion(task.id, task.completed)}
+                      >
+                        <div className={`h-5 w-5 rounded-full border border-white/40 ${
+                          task.completed ? 'bg-white/40' : ''
+                        }`}></div>
+                      </Button>
+                      <div>
+                        <p className="font-medium">{task.task_description}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={`w-2 h-2 rounded-full ${
+                            task.priority === 'high' ? 'bg-red-500' : 
+                            task.priority === 'medium' ? 'bg-yellow-500' : 
+                            'bg-green-500'
+                          }`}></span>
+                          <span className="text-xs text-white/70 capitalize">{task.priority}</span>
+                          <span className="text-xs bg-white/10 px-2 py-0.5 rounded capitalize">
+                            {task.task_type}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-white/50">
+                        Due: {format(new Date(task.due_date), 'MMM d, yyyy')}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6">
+                <p className="text-white/70">No tasks found for this client.</p>
+              </div>
+            )}
           </CardContent>
         </Card>
         
