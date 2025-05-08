@@ -55,3 +55,48 @@ export const updateProspectDealStage = async (prospectId: string, dealStageId: s
     return false;
   }
 };
+
+/**
+ * Fetch all prospects with their last contact date
+ */
+export const fetchProspects = async () => {
+  try {
+    const { data: prospectData, error } = await supabase
+      .from('prospect_profile')
+      .select(`
+        *,
+        prospect_engagement(last_contact_date)
+      `);
+      
+    if (error) {
+      console.error("Error fetching prospects:", error);
+      toast.error('Failed to load prospects');
+      return [];
+    }
+    
+    // Process prospects to add dragId and calculate days since last contact
+    const processedProspects = prospectData.map(prospect => {
+      // Extract last contact date from engagement if available
+      const lastContactDate = prospect.prospect_engagement && 
+        prospect.prospect_engagement[0]?.last_contact_date;
+      
+      // Calculate days since last contact
+      let daysSinceLastContact = null;
+      if (lastContactDate) {
+        const diffTime = Date.now() - new Date(lastContactDate).getTime();
+        daysSinceLastContact = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      }
+      
+      return {
+        ...prospect,
+        dragId: `drag-${prospect.id}`,
+        daysSinceLastContact
+      };
+    });
+    
+    return processedProspects;
+  } catch (error) {
+    console.error("Error in fetchProspects:", error);
+    return [];
+  }
+};

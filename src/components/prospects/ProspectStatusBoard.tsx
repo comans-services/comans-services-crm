@@ -2,10 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { DragDropContext } from '@hello-pangea/dnd';
 import { toast } from 'sonner';
-import { v4 as uuidv4 } from 'uuid';
 import StatusColumn from './StatusColumn';
 import { DealStage, fetchDealStages, updateProspectDealStage } from '@/services/supabaseService';
-import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 
 // Define interface for Prospect from database
 interface Prospect {
@@ -23,7 +22,7 @@ interface Prospect {
 }
 
 interface ProspectStatusBoardProps {
-  prospects: any[];
+  prospects: Prospect[];
   isLoading: boolean;
 }
 
@@ -34,88 +33,30 @@ type StatusColumn = {
 }
 
 const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, isLoading }) => {
-  const [dealStages, setDealStages] = useState<DealStage[]>([]);
   const [columns, setColumns] = useState<StatusColumn[]>([]);
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [dbProspects, setDbProspects] = useState<Prospect[]>([]);
-  const [isLoadingProspects, setIsLoadingProspects] = useState(true);
   
   // Load deal stages from database
+  const { data: dealStages = [], isLoading: isLoadingStages } = useQuery({
+    queryKey: ['dealStages'],
+    queryFn: fetchDealStages
+  });
+  
+  // Initialize columns based on deal stages
   useEffect(() => {
-    const loadDealStages = async () => {
-      const stages = await fetchDealStages();
-      setDealStages(stages);
-      
-      // Initialize columns based on deal stages
-      const initialColumns: StatusColumn[] = stages.map(stage => ({
+    if (dealStages.length > 0) {
+      const initialColumns: StatusColumn[] = dealStages.map(stage => ({
         id: stage.id,
         title: stage.name,
         prospects: []
       }));
       
       setColumns(initialColumns);
-      setIsLoaded(true);
-    };
-    
-    loadDealStages();
-  }, []);
-  
-  // Fetch prospects from the database
-  useEffect(() => {
-    const fetchProspects = async () => {
-      setIsLoadingProspects(true);
-      
-      try {
-        // Fetch prospects and their last contact date
-        const { data: prospectData, error } = await supabase
-          .from('prospect_profile')
-          .select(`
-            *,
-            prospect_engagement(last_contact_date)
-          `);
-          
-        if (error) {
-          console.error("Error fetching prospects:", error);
-          toast.error("Failed to load prospects");
-          return;
-        }
-        
-        // Process prospects to add dragId and calculate days since last contact
-        const processedProspects = prospectData.map(prospect => {
-          // Extract last contact date from engagement if available
-          const lastContactDate = prospect.prospect_engagement && 
-            prospect.prospect_engagement[0]?.last_contact_date;
-          
-          // Calculate days since last contact
-          let daysSinceLastContact = null;
-          if (lastContactDate) {
-            const diffTime = Date.now() - new Date(lastContactDate).getTime();
-            daysSinceLastContact = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          }
-          
-          return {
-            ...prospect,
-            dragId: `drag-${prospect.id}`,
-            daysSinceLastContact
-          };
-        });
-        
-        setDbProspects(processedProspects);
-      } catch (error) {
-        console.error("Error in fetchProspects:", error);
-      } finally {
-        setIsLoadingProspects(false);
-      }
-    };
-    
-    if (isLoaded) {
-      fetchProspects();
     }
-  }, [isLoaded]);
+  }, [dealStages]);
   
   // Distribute prospects among deal stages
   useEffect(() => {
-    if (!isLoaded || dealStages.length === 0) return;
+    if (dealStages.length === 0 || prospects.length === 0) return;
     
     const newColumns = [...columns];
     
@@ -125,7 +66,7 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
     });
     
     // Distribute prospects to appropriate columns
-    dbProspects.forEach(prospect => {
+    prospects.forEach(prospect => {
       let columnId = prospect.deal_stage_id || dealStages[0]?.id;
       
       const column = newColumns.find(col => col.id === columnId);
@@ -138,7 +79,7 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
     });
     
     setColumns(newColumns);
-  }, [dbProspects, isLoaded, dealStages]);
+  }, [prospects, dealStages, columns]);
   
   const handleDragEnd = async (result: any) => {
     const { destination, source, draggableId } = result;
@@ -180,7 +121,7 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
     await updateProspectDealStage(prospectId, dealStageId);
   };
   
-  if (isLoading || !isLoaded || isLoadingProspects) {
+  if (isLoading || isLoadingStages) {
     return <div className="card p-8 text-center">Loading prospects...</div>;
   }
   

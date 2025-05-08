@@ -2,11 +2,17 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import ProspectStatusBoard from '@/components/prospects/ProspectStatusBoard';
+import { fetchProspects } from '@/services/supabaseService';
 
 const CommunicationHistory = () => {
-  // We will pass empty array as default prospects and let the component fetch them
-  const prospects = [];
-  const isLoading = false;
+  // Fetch prospects from the database
+  const { 
+    data: prospects = [], 
+    isLoading 
+  } = useQuery({
+    queryKey: ['prospects'],
+    queryFn: fetchProspects
+  });
 
   return (
     <div className="flex flex-col h-full">
