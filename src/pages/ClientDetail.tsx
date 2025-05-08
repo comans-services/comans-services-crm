@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit, Mail, Phone, Building, User, FileText, Upload } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { getMockProspectById } from '@/services/mockDataService';
+import { getProspectById } from '@/services/supabaseService';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,7 +21,7 @@ const ClientDetail = () => {
   // Fetch client data using React Query
   const { data: client, isLoading, error } = useQuery({
     queryKey: ['client', clientId],
-    queryFn: () => getMockProspectById(clientId),
+    queryFn: () => getProspectById(clientId),
     enabled: !!clientId,
   });
 
@@ -106,7 +106,7 @@ const ClientDetail = () => {
               </div>
               <div>
                 <p className="text-sm text-white/70">Company</p>
-                <p className="font-medium">{client.company.charAt(0).toUpperCase() + client.company.slice(1)}</p>
+                <p className="font-medium">{client.company ? client.company.charAt(0).toUpperCase() + client.company.slice(1) : 'Not specified'}</p>
               </div>
             </div>
             
@@ -126,7 +126,7 @@ const ClientDetail = () => {
               </div>
               <div>
                 <p className="text-sm text-white/70">Phone</p>
-                <p className="font-medium">(555) 123-4567</p>
+                <p className="font-medium">{client.phone || 'Not specified'}</p>
               </div>
             </div>
           </div>
@@ -142,7 +142,7 @@ const ClientDetail = () => {
           <div className="mb-6">
             <p className="text-sm text-white/70 mb-2">Last Contact Date</p>
             <p className="font-medium">
-              {client.engagement.last_contact_date 
+              {client.engagement?.last_contact_date 
                 ? format(new Date(client.engagement.last_contact_date), 'MMMM d, yyyy') 
                 : 'No contact recorded'}
             </p>
@@ -150,7 +150,10 @@ const ClientDetail = () => {
           
           <div className="pt-4 border-t border-white/10">
             <p className="text-sm text-white/70 mb-2">Client Since</p>
-            <p className="font-medium">{format(new Date(client.created_at), 'MMMM d, yyyy')}</p>
+            <p className="font-medium">{client.client_since 
+              ? format(new Date(client.client_since), 'MMMM d, yyyy')
+              : format(new Date(client.created_at), 'MMMM d, yyyy')}
+            </p>
           </div>
         </div>
       </div>

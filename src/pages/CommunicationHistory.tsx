@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getMockProspects } from '@/services/mockDataService';
+import { getProspects, createProspect } from '@/services/supabaseService';
 import ProspectStatusBoard from '@/components/prospects/ProspectStatusBoard';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -11,10 +11,11 @@ import { toast } from 'sonner';
 const CommunicationHistory = () => {
   const { data: prospects = [], isLoading, refetch } = useQuery({
     queryKey: ['prospects'],
-    queryFn: getMockProspects,
+    queryFn: getProspects,
   });
 
   const [isNewLeadDialogOpen, setIsNewLeadDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [newLead, setNewLead] = useState({
     firstName: '',
     lastName: '',
@@ -27,14 +28,27 @@ const CommunicationHistory = () => {
     setNewLead((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleCreateLead = (e: React.FormEvent) => {
+  const handleCreateLead = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, this would create the lead in the backend
-    toast.success(`New lead created: ${newLead.firstName} ${newLead.lastName}`);
-    setIsNewLeadDialogOpen(false);
-    setNewLead({ firstName: '', lastName: '', email: '', company: '' });
-    // Refresh the prospects list
-    refetch();
+    setIsSubmitting(true);
+    
+    try {
+      const success = await createProspect(newLead);
+      
+      if (success) {
+        toast.success(`New lead created: ${newLead.firstName} ${newLead.lastName}`);
+        setIsNewLeadDialogOpen(false);
+        setNewLead({ firstName: '', lastName: '', email: '', company: '' });
+        refetch();
+      } else {
+        toast.error('Failed to create lead. Please try again.');
+      }
+    } catch (error) {
+      console.error("Error creating lead:", error);
+      toast.error('An error occurred while creating the lead');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -123,14 +137,16 @@ const CommunicationHistory = () => {
                 variant="outline"
                 onClick={() => setIsNewLeadDialogOpen(false)}
                 className="border-white/20 text-white hover:bg-white/10 hover:text-white"
+                disabled={isSubmitting}
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 className="bg-crm-accent hover:bg-crm-accent/90 text-white"
+                disabled={isSubmitting}
               >
-                Create Lead
+                {isSubmitting ? 'Creating...' : 'Create Lead'}
               </Button>
             </DialogFooter>
           </form>
