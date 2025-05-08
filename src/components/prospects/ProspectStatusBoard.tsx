@@ -5,11 +5,11 @@ import { ProspectWithEngagement } from '@/services/mockDataService';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
 import StatusColumn from './StatusColumn';
+import { DealStage, fetchDealStages, updateProspectDealStage } from '@/services/supabaseService';
 
 interface ProspectStatusBoardProps {
   prospects: ProspectWithEngagement[];
   isLoading: boolean;
-  onCreateLead: () => void;
 }
 
 type StatusColumn = {
@@ -18,50 +18,34 @@ type StatusColumn = {
   prospects: ProspectWithEngagement[];
 }
 
-const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, isLoading, onCreateLead }) => {
-  // Define status columns
-  const initialColumns: StatusColumn[] = [
-    {
-      id: 'new-lead',
-      title: 'New Lead',
-      prospects: []
-    },
-    {
-      id: 'contacted',
-      title: 'Contacted',
-      prospects: []
-    },
-    {
-      id: 'meeting-scheduled',
-      title: 'Meeting Scheduled',
-      prospects: []
-    },
-    {
-      id: 'qualified',
-      title: 'Qualified',
-      prospects: []
-    },
-    {
-      id: 'proposal-sent',
-      title: 'Proposal Sent',
-      prospects: []
-    },
-    {
-      id: 'closed-won',
-      title: 'Closed Won',
-      prospects: []
-    },
-    {
-      id: 'closed-lost',
-      title: 'Closed Lost',
-      prospects: []
-    }
-  ];
+const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, isLoading }) => {
+  const [dealStages, setDealStages] = useState<DealStage[]>([]);
+  const [columns, setColumns] = useState<StatusColumn[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+  
+  // Load deal stages from database
+  useEffect(() => {
+    const loadDealStages = async () => {
+      const stages = await fetchDealStages();
+      setDealStages(stages);
+      
+      // Initialize columns based on deal stages
+      const initialColumns: StatusColumn[] = stages.map(stage => ({
+        id: stage.id,
+        title: stage.name,
+        prospects: []
+      }));
+      
+      setColumns(initialColumns);
+      setIsLoaded(true);
+    };
+    
+    loadDealStages();
+  }, []);
   
   // Ensure each prospect has a unique draggable ID
   const ensureUniqueIds = (prospects: ProspectWithEngagement[]): ProspectWithEngagement[] => {
     return prospects.map(prospect => {
-      // If the ID looks like a duplicate (prospect-X format), generate a new unique ID
       if (prospect.id.startsWith('prospect-')) {
         return { ...prospect, dragId: `drag-${uuidv4()}` };
       }
@@ -69,51 +53,36 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
     });
   };
 
-  // For demonstration, distribute prospects among statuses based on some logic
-  const distributeProspects = (prospects: ProspectWithEngagement[]): StatusColumn[] => {
-    const columns = [...initialColumns];
-    const uniqueProspects = ensureUniqueIds(prospects);
+  // Distribute prospects among deal stages when they're loaded
+  useEffect(() => {
+    if (!isLoaded || prospects.length === 0 || dealStages.length === 0) return;
     
+    const uniqueProspects = ensureUniqueIds(prospects);
+    const newColumns = [...columns];
+    
+    // Clear all columns first
+    newColumns.forEach(col => {
+      col.prospects = [];
+    });
+    
+    // Distribute prospects to appropriate columns
     uniqueProspects.forEach(prospect => {
-      const daysSinceLastContact = prospect.daysSinceLastContact;
-      let statusId: string;
+      // For demo/mock data that might not have deal_stage_id, use a default distribution
+      let columnId = prospect.deal_stage_id || dealStages[0]?.id;
       
-      // Simple logic to distribute prospects based on days since last contact
-      if (daysSinceLastContact === null) {
-        statusId = 'new-lead';
-      } else if (daysSinceLastContact <= 2) {
-        statusId = 'contacted';
-      } else if (daysSinceLastContact <= 5) {
-        statusId = 'meeting-scheduled';
-      } else if (daysSinceLastContact <= 7) {
-        statusId = 'qualified';
-      } else if (daysSinceLastContact <= 10) {
-        statusId = 'proposal-sent';
-      } else if (daysSinceLastContact <= 15) {
-        statusId = 'closed-won';
-      } else {
-        statusId = 'closed-lost';
-      }
-      
-      const column = columns.find(col => col.id === statusId);
+      const column = newColumns.find(col => col.id === columnId);
       if (column) {
         column.prospects.push(prospect);
+      } else if (newColumns.length > 0) {
+        // If column not found, add to first column as fallback
+        newColumns[0].prospects.push(prospect);
       }
     });
     
-    return columns;
-  };
+    setColumns(newColumns);
+  }, [prospects, isLoaded, dealStages]);
   
-  const [columns, setColumns] = useState<StatusColumn[]>(distributeProspects(prospects));
-  
-  // Update columns when prospects change
-  useEffect(() => {
-    if (prospects.length > 0) {
-      setColumns(distributeProspects(prospects));
-    }
-  }, [prospects]);
-  
-  const handleDragEnd = (result: any) => {
+  const handleDragEnd = async (result: any) => {
     const { destination, source, draggableId } = result;
     
     // If no destination or dropped in the same place
@@ -144,9 +113,16 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
     
     // Show toast notification
     toast.success(`${movedProspect.first_name} ${movedProspect.last_name} moved to ${destColumn.title}`);
+    
+    // Update the prospect's deal stage in the database
+    const prospectId = movedProspect.id;
+    const dealStageId = destColumn.id;
+    
+    // Call the API to update the deal stage
+    await updateProspectDealStage(prospectId, dealStageId);
   };
   
-  if (isLoading) {
+  if (isLoading || !isLoaded) {
     return <div className="card p-8 text-center">Loading prospects...</div>;
   }
   
@@ -160,7 +136,6 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
               id={column.id}
               title={column.title}
               prospects={column.prospects}
-              onCreateLead={column.id === 'new-lead' ? onCreateLead : undefined}
             />
           ))}
         </div>

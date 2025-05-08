@@ -2,6 +2,7 @@
 import React from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import { ProspectWithEngagement } from '@/services/mockDataService';
+import { getStatusColor } from '@/utils/clientUtils';
 
 interface ProspectCardProps {
   prospect: ProspectWithEngagement;
@@ -34,6 +35,9 @@ const ProspectCard: React.FC<ProspectCardProps> = ({ prospect, index }) => {
       zIndex: 9999, // Ensure dragged item is above everything else
     })
   });
+
+  // Determine status color
+  const statusColor = getStatusColor(prospect.daysSinceLastContact);
 
   return (
     <Draggable 
@@ -69,7 +73,7 @@ const ProspectCard: React.FC<ProspectCardProps> = ({ prospect, index }) => {
                   ? `${prospect.daysSinceLastContact} days ago` 
                   : 'New lead'}
               </div>
-              <div className={`w-2 h-2 rounded-full bg-${prospect.statusColor}`}></div>
+              <div className={`w-2 h-2 rounded-full bg-${statusColor}`}></div>
             </div>
           </div>
         </div>
