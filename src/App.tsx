@@ -17,7 +17,6 @@ import Login from "./pages/Login";
 import KanbanBoard from "./pages/KanbanBoard";
 import AuthGuard from "./components/auth/AuthGuard";
 import TeamManagement from "./pages/TeamManagement";
-import CommunicationHistory from "./pages/CommunicationHistory";
 import TodaysTasks from "./pages/TodaysTasks";
 import EmailCommunicationHistory from "./pages/EmailCommunicationHistory";
 import StatusOfProspect from "./pages/StatusOfProspect";
@@ -90,14 +89,6 @@ const App = () => (
           <AuthGuard>
             <Layout>
               <StatusOfProspect />
-            </Layout>
-          </AuthGuard>
-        } />
-        
-        <Route path="/communications" element={
-          <AuthGuard>
-            <Layout>
-              <CommunicationHistory />
             </Layout>
           </AuthGuard>
         } />
