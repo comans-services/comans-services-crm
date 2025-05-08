@@ -2,17 +2,28 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import ProspectStatusBoard from '@/components/prospects/ProspectStatusBoard';
-import { fetchProspects } from '@/services/supabaseService';
+import { fetchProspects, fetchDealStages } from '@/services/supabaseService';
 
 const CommunicationHistory = () => {
   // Fetch prospects from the database
   const { 
     data: prospects = [], 
-    isLoading 
+    isLoading: isLoadingProspects 
   } = useQuery({
     queryKey: ['prospects'],
     queryFn: fetchProspects
   });
+  
+  // Fetch deal stages from the database
+  const {
+    data: dealStages = [],
+    isLoading: isLoadingDealStages
+  } = useQuery({
+    queryKey: ['dealStages'],
+    queryFn: fetchDealStages
+  });
+
+  const isLoading = isLoadingProspects || isLoadingDealStages;
 
   return (
     <div className="flex flex-col h-full">
@@ -23,6 +34,7 @@ const CommunicationHistory = () => {
           <h2 className="text-xl font-semibold mb-4">Prospect Status Board</h2>
           <ProspectStatusBoard 
             prospects={prospects} 
+            dealStages={dealStages}
             isLoading={isLoading}
           />
         </div>

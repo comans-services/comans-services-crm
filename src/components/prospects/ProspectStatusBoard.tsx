@@ -3,8 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { DragDropContext } from '@hello-pangea/dnd';
 import { toast } from 'sonner';
 import StatusColumn from './StatusColumn';
-import { DealStage, fetchDealStages, updateProspectDealStage } from '@/services/supabaseService';
-import { useQuery } from '@tanstack/react-query';
+import { DealStage, updateProspectDealStage } from '@/services/supabaseService';
 
 // Define interface for Prospect from database
 interface Prospect {
@@ -23,6 +22,7 @@ interface Prospect {
 
 interface ProspectStatusBoardProps {
   prospects: Prospect[];
+  dealStages: DealStage[];
   isLoading: boolean;
 }
 
@@ -32,14 +32,12 @@ type StatusColumn = {
   prospects: Prospect[];
 }
 
-const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, isLoading }) => {
+const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ 
+  prospects, 
+  dealStages, 
+  isLoading 
+}) => {
   const [columns, setColumns] = useState<StatusColumn[]>([]);
-  
-  // Load deal stages from database
-  const { data: dealStages = [], isLoading: isLoadingStages } = useQuery({
-    queryKey: ['dealStages'],
-    queryFn: fetchDealStages
-  });
   
   // Initialize columns based on deal stages
   useEffect(() => {
@@ -121,7 +119,7 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
     await updateProspectDealStage(prospectId, dealStageId);
   };
   
-  if (isLoading || isLoadingStages) {
+  if (isLoading) {
     return <div className="card p-8 text-center">Loading prospects...</div>;
   }
   
