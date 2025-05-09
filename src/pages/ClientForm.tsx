@@ -28,6 +28,12 @@ const ClientForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.firstName || !formData.lastName || !formData.email) {
+      toast.error('First name, last name, and email are required');
+      return;
+    }
+    
     setIsSubmitting(true);
 
     try {
@@ -48,6 +54,7 @@ const ClientForm = () => {
       // Redirect to client detail page
       navigate(`/clients/${newClient.id}`);
     } catch (error: any) {
+      console.error('Error creating client:', error);
       toast.error(`Error creating client: ${error.message}`);
     } finally {
       setIsSubmitting(false);
