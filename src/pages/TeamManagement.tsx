@@ -1,383 +1,501 @@
 
 import React, { useState, useEffect } from 'react';
-import { User, Edit, Trash2, Plus, Mail, Clock } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { toast } from '@/components/ui/use-toast';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { 
-  Dialog,
-  DialogContent,
+  getTeamMembers, 
+  addTeamMember, 
+  updateTeamMember, 
+  removeTeamMember, 
+  setupRealTimeSubscription,
+  TeamMember
+} from '@/services/supabaseService';
+import { 
+  Button, 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
   DialogDescription,
   DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { getTeamMembers, addTeamMember, updateTeamMember, removeTeamMember, getUserActivity, setupRealTimeSubscription } from '@/services/supabaseService';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormDescription,
+  FormMessage,
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  useToast
+} from '@/components/ui';
+import { Check, Edit2, Trash2, UserPlus, X, AlertCircle } from 'lucide-react';
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { format } from 'date-fns';
 
-interface TeamMemberFormData {
-  id?: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  role: string;
-}
+// Form schema for team member
+const teamMemberSchema = z.object({
+  first_name: z.string().min(1, { message: "First name is required" }),
+  last_name: z.string().min(1, { message: "Last name is required" }),
+  email: z.string().email({ message: "Invalid email address" }),
+  role: z.enum(['admin', 'salesperson'], {
+    required_error: "Please select a role",
+  }),
+});
+
+type TeamMemberFormValues = z.infer<typeof teamMemberSchema>;
 
 const TeamManagement = () => {
+  const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [currentMember, setCurrentMember] = useState<TeamMemberFormData>({
-    first_name: '',
-    last_name: '',
-    email: '',
-    role: 'Salesperson'
-  });
-
-  // Fetch team members
-  const { 
-    data: teamMembers = [], 
-    isLoading: isLoadingTeam,
-    error: teamError
-  } = useQuery({
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [currentMember, setCurrentMember] = useState<TeamMember | null>(null);
+  const [activeTab, setActiveTab] = useState('all');
+  
+  // Fetch team members data
+  const { data: teamMembers = [], isLoading, error } = useQuery({
     queryKey: ['team-members'],
-    queryFn: getTeamMembers
+    queryFn: getTeamMembers,
   });
 
-  // Fetch activity logs
-  const { 
-    data: activityLog = [], 
-    isLoading: isLoadingActivity,
-    error: activityError
-  } = useQuery({
-    queryKey: ['user-activity'],
-    queryFn: () => getUserActivity(10)
-  });
-
-  // Set up real-time subscriptions
-  useEffect(() => {
-    const unsubTeam = setupRealTimeSubscription('app_user', '*', () => {
-      queryClient.invalidateQueries({ queryKey: ['team-members'] });
-    });
-    
-    const unsubActivity = setupRealTimeSubscription('user_activity', '*', () => {
-      queryClient.invalidateQueries({ queryKey: ['user-activity'] });
-    });
-    
-    return () => {
-      unsubTeam();
-      unsubActivity();
-    };
-  }, [queryClient]);
-
-  const handleDeleteMember = (id: string) => {
-    // Show confirmation toast
-    toast({
-      title: "Confirm Deletion",
-      description: "Are you sure you want to delete this team member?",
-      action: (
-        <Button 
-          onClick={async () => {
-            try {
-              await removeTeamMember(id);
-              toast({
-                title: "Team member removed",
-                description: "The team member has been removed successfully.",
-              });
-            } catch (error: any) {
-              toast({
-                title: "Error",
-                description: error.message,
-                variant: "destructive"
-              });
-            }
-          }}
-          variant="destructive"
-        >
-          Delete
-        </Button>
-      ),
-    });
-  };
-
-  const handleEditMember = (member: any) => {
-    setCurrentMember({
-      id: member.id,
-      first_name: member.first_name,
-      last_name: member.last_name,
-      email: member.email,
-      role: member.role
-    });
-    setIsDialogOpen(true);
-  };
-
-  const handleAddNewMember = () => {
-    setCurrentMember({
+  // Form for adding new team member
+  const addForm = useForm<TeamMemberFormValues>({
+    resolver: zodResolver(teamMemberSchema),
+    defaultValues: {
       first_name: '',
       last_name: '',
       email: '',
-      role: 'Salesperson'
-    });
-    setIsDialogOpen(true);
-  };
+      role: 'salesperson',
+    },
+  });
 
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    try {
-      if (currentMember.id) {
-        // Update existing member
-        await updateTeamMember(currentMember.id, {
-          first_name: currentMember.first_name,
-          last_name: currentMember.last_name,
-          email: currentMember.email,
-          role: currentMember.role
-        });
-        
-        toast({
-          title: "Team member updated",
-          description: `${currentMember.first_name} ${currentMember.last_name} has been updated successfully.`,
-        });
-      } else {
-        // Add new member
-        await addTeamMember({
-          first_name: currentMember.first_name,
-          last_name: currentMember.last_name,
-          email: currentMember.email,
-          role: currentMember.role
-        });
-        
-        toast({
-          title: "Team member added",
-          description: `${currentMember.first_name} ${currentMember.last_name} has been added successfully.`,
-        });
-      }
-      
-      setIsDialogOpen(false);
-    } catch (error: any) {
+  // Form for editing team member
+  const editForm = useForm<TeamMemberFormValues>({
+    resolver: zodResolver(teamMemberSchema),
+    defaultValues: {
+      first_name: '',
+      last_name: '',
+      email: '',
+      role: 'salesperson',
+    },
+  });
+
+  // Set up real-time subscription for app_user table
+  useEffect(() => {
+    const unsubscribe = setupRealTimeSubscription('app_user', '*', (payload) => {
+      queryClient.invalidateQueries({ queryKey: ['team-members'] });
       toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
+        title: 'Team updated',
+        description: 'Team members data has been updated.',
+        variant: 'default',
+      });
+    });
+    
+    return () => {
+      unsubscribe();
+    };
+  }, [queryClient, toast]);
+
+  // Handle add team member form submission
+  const onAddSubmit = async (data: TeamMemberFormValues) => {
+    try {
+      await addTeamMember(data);
+      toast({
+        title: 'Team member added',
+        description: `${data.first_name} ${data.last_name} has been added to the team.`,
+        variant: 'default',
+      });
+      setIsAddDialogOpen(false);
+      addForm.reset();
+      queryClient.invalidateQueries({ queryKey: ['team-members'] });
+    } catch (error) {
+      console.error('Error adding team member:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to add team member. Please try again.',
+        variant: 'destructive',
       });
     }
   };
 
-  if (isLoadingTeam || isLoadingActivity) {
-    return <div className="text-center py-10">Loading team data...</div>;
+  // Handle edit team member form submission
+  const onEditSubmit = async (data: TeamMemberFormValues) => {
+    if (!currentMember) return;
+    
+    try {
+      await updateTeamMember(currentMember.id, data);
+      toast({
+        title: 'Team member updated',
+        description: `${data.first_name} ${data.last_name}'s information has been updated.`,
+        variant: 'default',
+      });
+      setIsEditDialogOpen(false);
+      editForm.reset();
+      queryClient.invalidateQueries({ queryKey: ['team-members'] });
+    } catch (error) {
+      console.error('Error updating team member:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update team member. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Handle delete team member
+  const handleDeleteMember = async () => {
+    if (!currentMember) return;
+    
+    try {
+      await removeTeamMember(currentMember.id);
+      toast({
+        title: 'Team member removed',
+        description: `${currentMember.first_name} ${currentMember.last_name} has been removed from the team.`,
+        variant: 'default',
+      });
+      setIsDeleteDialogOpen(false);
+      setCurrentMember(null);
+      queryClient.invalidateQueries({ queryKey: ['team-members'] });
+    } catch (error) {
+      console.error('Error removing team member:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to remove team member. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Open edit dialog and populate form with member data
+  const handleEditMember = (member: TeamMember) => {
+    setCurrentMember(member);
+    editForm.reset({
+      first_name: member.first_name,
+      last_name: member.last_name,
+      email: member.email,
+      role: member.role,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  // Open delete confirmation dialog
+  const handleDeleteConfirm = (member: TeamMember) => {
+    setCurrentMember(member);
+    setIsDeleteDialogOpen(true);
+  };
+
+  // Filter team members based on active tab
+  const filteredMembers = teamMembers.filter(member => {
+    if (activeTab === 'all') return true;
+    return member.role === activeTab;
+  });
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-64">Loading team data...</div>;
   }
 
-  if (teamError || activityError) {
-    return <div className="text-center py-10 text-red-500">Error loading data. Please try again.</div>;
+  if (error) {
+    return (
+      <div className="card p-8 text-center">
+        <h2 className="text-xl font-bold mb-4">Error Loading Team Data</h2>
+        <p className="text-white/70 mb-6">There was a problem loading team data from the database.</p>
+        <Button onClick={() => queryClient.invalidateQueries({ queryKey: ['team-members'] })}>
+          Retry
+        </Button>
+      </div>
+    );
   }
 
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">Team Management</h1>
-        <Button className="bg-red-600 text-white hover:bg-red-700" onClick={handleAddNewMember}>
-          <Plus size={16} className="mr-2" /> Add Team Member
+        <Button onClick={() => setIsAddDialogOpen(true)}>
+          <UserPlus className="mr-2 h-4 w-4" /> Add Team Member
         </Button>
       </div>
       
-      <div className="grid grid-cols-1 gap-8">
-        <Card className="bg-[#0f133e] text-white border-white/10">
-          <CardHeader>
-            <CardTitle>Team Members</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow className="border-white/10">
-                  <TableHead className="text-white">Name</TableHead>
-                  <TableHead className="text-white">Email</TableHead>
-                  <TableHead className="text-white">Role</TableHead>
-                  <TableHead className="text-white">Last Active</TableHead>
-                  <TableHead className="text-right text-white">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {teamMembers.map((member) => (
-                  <TableRow key={member.id} className="border-white/10">
-                    <TableCell className="font-medium text-white">
-                      <div className="flex items-center">
-                        <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center mr-2">
-                          <User size={14} />
-                        </div>
-                        {member.first_name} {member.last_name}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-white">{member.email}</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        member.role === 'Admin' ? 'bg-crm-accent/20 text-crm-accent' : 'bg-blue-500/20 text-blue-500'
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+        <TabsList className="bg-white/10">
+          <TabsTrigger value="all" className="data-[state=active]:bg-crm-accent">All</TabsTrigger>
+          <TabsTrigger value="admin" className="data-[state=active]:bg-crm-accent">Admins</TabsTrigger>
+          <TabsTrigger value="salesperson" className="data-[state=active]:bg-crm-accent">Salespeople</TabsTrigger>
+        </TabsList>
+      </Tabs>
+      
+      <div className="card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-white/20">
+                <th className="text-left py-4 px-4 font-medium">Name</th>
+                <th className="text-left py-4 px-4 font-medium">Email</th>
+                <th className="text-left py-4 px-4 font-medium">Role</th>
+                <th className="text-left py-4 px-4 font-medium">Last Active</th>
+                <th className="text-right py-4 px-4 font-medium">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredMembers.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-8 text-center text-white/70">
+                    No team members found. Add your first team member to get started.
+                  </td>
+                </tr>
+              ) : (
+                filteredMembers.map((member) => (
+                  <tr key={member.id} className="border-b border-white/10 hover:bg-white/5 transition-colors">
+                    <td className="py-4 px-4">{member.first_name} {member.last_name}</td>
+                    <td className="py-4 px-4">{member.email}</td>
+                    <td className="py-4 px-4">
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        member.role === 'admin' ? 'bg-crm-accent text-white' : 'bg-white/10 text-white'
                       }`}>
-                        {member.role}
+                        {member.role === 'admin' ? 'Admin' : 'Salesperson'}
                       </span>
-                    </TableCell>
-                    <TableCell className="text-white">
-                      <div className="flex items-center text-white/70">
-                        <Clock size={14} className="mr-1" /> 
-                        {member.last_active 
-                          ? `${formatTimeAgo(new Date(member.last_active))}`
-                          : 'Never'}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end space-x-2">
-                        <Button variant="outline" size="sm" onClick={() => handleEditMember(member)} className="bg-transparent hover:bg-white/10">
-                          <Edit size={14} />
+                    </td>
+                    <td className="py-4 px-4">
+                      {member.last_active ? 
+                        format(new Date(member.last_active), 'MMM d, yyyy HH:mm') : 
+                        'Not logged in yet'}
+                    </td>
+                    <td className="py-4 px-4 text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button variant="ghost" size="icon" onClick={() => handleEditMember(member)}>
+                          <Edit2 className="h-4 w-4" />
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleDeleteMember(member.id)} className="bg-transparent hover:bg-white/10">
-                          <Trash2 size={14} />
+                        <Button variant="ghost" size="icon" onClick={() => handleDeleteConfirm(member)}>
+                          <Trash2 className="h-4 w-4 text-red-500" />
                         </Button>
                       </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-[#0f133e] text-white border-white/10">
-          <CardHeader>
-            <CardTitle>Activity Log</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {activityLog.length > 0 ? activityLog.map((log) => (
-                <div key={log.id} className="flex items-start border-b border-white/10 pb-4 last:border-0">
-                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center mr-3">
-                    <User size={14} />
-                  </div>
-                  <div>
-                    <p>
-                      <span className="font-medium">
-                        {log.app_user?.first_name} {log.app_user?.last_name}
-                      </span>{' '}
-                      <span className="text-white/70">{log.activity_type}</span>
-                    </p>
-                    <p className="text-xs text-white/50 mt-1">
-                      {formatTimeAgo(new Date(log.occurred_at))}
-                    </p>
-                  </div>
-                </div>
-              )) : (
-                <div className="text-center py-4 text-white/50">
-                  No activity recorded yet
-                </div>
+                    </td>
+                  </tr>
+                ))
               )}
-            </div>
-          </CardContent>
-        </Card>
+            </tbody>
+          </table>
+        </div>
       </div>
       
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-[#0f133e] text-white border-white/10">
+      {/* Add Team Member Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>{currentMember.id ? 'Edit' : 'Add'} Team Member</DialogTitle>
-            <DialogDescription className="text-white/70">
-              {currentMember.id 
-                ? 'Update team member information below.' 
-                : 'Fill in the information below to add a new team member.'}
+            <DialogTitle>Add Team Member</DialogTitle>
+            <DialogDescription>
+              Add a new team member to your CRM system.
             </DialogDescription>
           </DialogHeader>
           
-          <form onSubmit={handleFormSubmit}>
-            <div className="space-y-4 py-2">
+          <Form {...addForm}>
+            <form onSubmit={addForm.handleSubmit(onAddSubmit)} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="first_name" className="text-sm font-medium mb-2 block text-white">
-                    First Name
-                  </label>
-                  <input
-                    type="text"
-                    id="first_name"
-                    value={currentMember.first_name}
-                    onChange={(e) => setCurrentMember({...currentMember, first_name: e.target.value})}
-                    className="px-3 py-2 bg-white/5 border border-white/20 rounded-md focus:outline-none focus:ring-2 focus:ring-crm-accent/50 text-white w-full"
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="last_name" className="text-sm font-medium mb-2 block text-white">
-                    Last Name
-                  </label>
-                  <input
-                    type="text"
-                    id="last_name"
-                    value={currentMember.last_name}
-                    onChange={(e) => setCurrentMember({...currentMember, last_name: e.target.value})}
-                    className="px-3 py-2 bg-white/5 border border-white/20 rounded-md focus:outline-none focus:ring-2 focus:ring-crm-accent/50 text-white w-full"
-                    required
-                  />
-                </div>
-              </div>
-              <div>
-                <label htmlFor="email" className="text-sm font-medium mb-2 block text-white">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  value={currentMember.email}
-                  onChange={(e) => setCurrentMember({...currentMember, email: e.target.value})}
-                  className="px-3 py-2 bg-white/5 border border-white/20 rounded-md focus:outline-none focus:ring-2 focus:ring-crm-accent/50 text-white w-full"
-                  required
+                <FormField
+                  control={addForm.control}
+                  name="first_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>First Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="John" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={addForm.control}
+                  name="last_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Last Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Doe" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
               </div>
-              <div>
-                <label htmlFor="role" className="text-sm font-medium mb-2 block text-white">
-                  Role
-                </label>
-                <select
-                  id="role"
-                  value={currentMember.role}
-                  onChange={(e) => setCurrentMember({...currentMember, role: e.target.value})}
-                  className="px-3 py-2 bg-[#0f133e] border border-white/20 rounded-md focus:outline-none focus:ring-2 focus:ring-crm-accent/50 text-white w-full"
-                >
-                  <option value="Admin" className="bg-[#0f133e] text-white">Admin</option>
-                  <option value="Salesperson" className="bg-[#0f133e] text-white">Salesperson</option>
-                </select>
+              
+              <FormField
+                control={addForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="john.doe@example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={addForm.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Role</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select role" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="salesperson">Salesperson</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Admins can manage team members and access all features.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button variant="outline" type="button" onClick={() => setIsAddDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit">Add Team Member</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Edit Team Member Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Team Member</DialogTitle>
+            <DialogDescription>
+              Update team member information.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...editForm}>
+            <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={editForm.control}
+                  name="first_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>First Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={editForm.control}
+                  name="last_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Last Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
-            </div>
-            
-            <DialogFooter className="mt-4">
-              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="bg-transparent hover:bg-white/10">
-                Cancel
-              </Button>
-              <Button type="submit" className="bg-red-600 text-white hover:bg-red-700">{currentMember.id ? 'Update' : 'Add'}</Button>
-            </DialogFooter>
-          </form>
+              
+              <FormField
+                control={editForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={editForm.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Role</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="salesperson">Salesperson</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button variant="outline" type="button" onClick={() => setIsEditDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit">Save Changes</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+              Confirm Deletion
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to remove {currentMember?.first_name} {currentMember?.last_name} from the team?
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              <X className="h-4 w-4 mr-2" /> Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteMember}>
+              <Trash2 className="h-4 w-4 mr-2" /> Delete
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
   );
 };
-
-// Helper function to format time ago
-function formatTimeAgo(date: Date): string {
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffSecs = Math.floor(diffMs / 1000);
-  const diffMins = Math.floor(diffSecs / 60);
-  const diffHours = Math.floor(diffMins / 60);
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffSecs < 60) return 'Just now';
-  if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
-  if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
-  if (diffDays < 30) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
-  
-  return format(date, 'MMM d, yyyy');
-}
 
 export default TeamManagement;

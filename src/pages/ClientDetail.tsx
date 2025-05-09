@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit, Mail, Phone, Building, User, FileText, Upload } from 'lucide-react';
@@ -11,6 +10,7 @@ import { toast } from '@/components/ui/use-toast';
 import DocumentUploader from '@/components/clients/DocumentUploader';
 import ActionItemsList from '@/components/clients/ActionItemsList';
 import { ActionItem } from '@/services/supabaseService';
+import { extractActionItemsFromDocument } from '@/services/supabaseService';
 
 const ClientDetail = () => {
   const { id } = useParams<{ id: string }>();
