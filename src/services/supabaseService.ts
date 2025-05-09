@@ -2,6 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { getStatusColor, getRecommendedAction, extractDomain, getDomainCompany } from '@/utils/clientUtils';
 import { format } from 'date-fns';
+import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 // Types for Supabase tables
 export interface ProspectProfile {
@@ -605,9 +606,8 @@ export const recordUserActivity = async (activity: {
 export const setupRealTimeSubscription = (
   table: string, 
   event: 'INSERT' | 'UPDATE' | 'DELETE' | '*',
-  callback: (payload: any) => void
+  callback: (payload: RealtimePostgresChangesPayload<Record<string, any>>) => void
 ) => {
-  // Update to use the v2 Supabase Realtime channel API
   const channel = supabase
     .channel(`table-changes:${table}`)
     .on(
