@@ -43,7 +43,7 @@ export interface TeamMember {
   email: string;
   first_name: string;
   last_name: string;
-  role: string;
+  role: "admin" | "salesperson";
   last_active?: string;
   created_at: string;
   updated_at: string;
@@ -66,6 +66,7 @@ export interface ActionItem {
   dueDate: string;
   createdAt: string;
   completed: boolean;
+  status?: 'todo' | 'in-progress' | 'completed';
 }
 
 export interface ProspectWithEngagement extends ProspectProfile {
@@ -174,6 +175,11 @@ export const getProspects = async (): Promise<ProspectWithEngagement[]> => {
       // Find communications for this prospect
       const prospectCommunications = (communications || [])
         .filter(c => c.prospect_id === profile.id)
+        .map(c => ({
+          ...c,
+          prospect_first_name: profile.first_name,
+          prospect_last_name: profile.last_name
+        }))
         .sort((a, b) => new Date(b.date_of_communication).getTime() - new Date(a.date_of_communication).getTime());
 
       // Calculate days since last contact
@@ -394,7 +400,19 @@ export const recordCommunication = async (communication: {
   // Get current date
   const now = new Date().toISOString();
 
-  // Insert communication record
+  // Get prospect details first
+  const { data: prospect, error: prospectError } = await supabase
+    .from('prospect_profile')
+    .select('first_name, last_name')
+    .eq('id', communication.prospect_id)
+    .single();
+    
+  if (prospectError) {
+    console.error('Error getting prospect details:', prospectError);
+    throw new Error(prospectError.message);
+  }
+
+  // Insert communication record with prospect name details
   const { data, error } = await supabase
     .from('sales_tracking')
     .insert({
@@ -402,7 +420,9 @@ export const recordCommunication = async (communication: {
       subject_text: communication.subject_text,
       body_text: communication.body_text || null,
       salesperson_email: communication.salesperson_email,
-      date_of_communication: now
+      date_of_communication: now,
+      prospect_first_name: prospect.first_name,
+      prospect_last_name: prospect.last_name
     })
     .select()
     .single();
@@ -421,7 +441,7 @@ export const recordCommunication = async (communication: {
     })
     .eq('prospect_id', communication.prospect_id);
 
-  return data;
+  return data as SalesTracking;
 };
 
 /**
@@ -447,7 +467,7 @@ export const addTeamMember = async (member: {
   first_name: string;
   last_name: string;
   email: string;
-  role: string;
+  role: "admin" | "salesperson";
 }): Promise<TeamMember> => {
   const { data, error } = await supabase
     .from('app_user')
@@ -470,7 +490,7 @@ export const updateTeamMember = async (id: string, updates: {
   first_name?: string;
   last_name?: string;
   email?: string;
-  role?: string;
+  role?: "admin" | "salesperson";
 }): Promise<TeamMember> => {
   const { data, error } = await supabase
     .from('app_user')
