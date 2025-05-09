@@ -1,496 +1,385 @@
 
 import React, { useState, useEffect } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "@/components/ui/use-toast";
 import { 
-  getTeamMembers, 
-  addTeamMember, 
-  updateTeamMember, 
-  removeTeamMember, 
-  setupRealTimeSubscription,
-  TeamMember
+  getAllTeamMembers, 
+  addTeamMember as addTeamMemberService, 
+  updateTeamMember as updateTeamMemberService,
+  deleteTeamMember as deleteTeamMemberService,
+  TeamMember,
+  setupRealTimeSubscription
 } from '@/services/supabaseService';
-import { 
-  Button, 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogDescription,
-  DialogFooter,
-  Form,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormDescription,
-  FormMessage,
-  Input,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  useToast
-} from '@/components/ui';
-import { Check, Edit2, Trash2, UserPlus, X, AlertCircle } from 'lucide-react';
-import { z } from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { UserPlus, User, Mail, Phone, Edit, Trash2, Building } from 'lucide-react';
 import { format } from 'date-fns';
 
-// Form schema for team member
-const teamMemberSchema = z.object({
-  first_name: z.string().min(1, { message: "First name is required" }),
-  last_name: z.string().min(1, { message: "Last name is required" }),
-  email: z.string().email({ message: "Invalid email address" }),
-  role: z.enum(['admin', 'salesperson'], {
-    required_error: "Please select a role",
-  }),
-});
-
-type TeamMemberFormValues = z.infer<typeof teamMemberSchema>;
-
 const TeamManagement = () => {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [currentMember, setCurrentMember] = useState<TeamMember | null>(null);
-  const [activeTab, setActiveTab] = useState('all');
+  const [formData, setFormData] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    role: 'salesperson' as 'admin' | 'salesperson'
+  });
   
-  // Fetch team members data
-  const { data: teamMembers = [], isLoading, error } = useQuery({
-    queryKey: ['team-members'],
-    queryFn: getTeamMembers,
+  const queryClient = useQueryClient();
+  
+  // Fetch team members using React Query
+  const { data: teamMembers = [], isLoading } = useQuery({
+    queryKey: ['teamMembers'],
+    queryFn: getAllTeamMembers,
   });
 
-  // Form for adding new team member
-  const addForm = useForm<TeamMemberFormValues>({
-    resolver: zodResolver(teamMemberSchema),
-    defaultValues: {
-      first_name: '',
-      last_name: '',
-      email: '',
-      role: 'salesperson',
-    },
-  });
-
-  // Form for editing team member
-  const editForm = useForm<TeamMemberFormValues>({
-    resolver: zodResolver(teamMemberSchema),
-    defaultValues: {
-      first_name: '',
-      last_name: '',
-      email: '',
-      role: 'salesperson',
-    },
-  });
-
-  // Set up real-time subscription for app_user table
+  // Setup real-time subscription for team members
   useEffect(() => {
-    const unsubscribe = setupRealTimeSubscription('app_user', '*', (payload) => {
-      queryClient.invalidateQueries({ queryKey: ['team-members'] });
+    const unsubTeamMembers = setupRealTimeSubscription('team_members', '*', () => {
+      queryClient.invalidateQueries({ queryKey: ['teamMembers'] });
       toast({
-        title: 'Team updated',
-        description: 'Team members data has been updated.',
-        variant: 'default',
+        title: "Team updated",
+        description: "A team member has been added, updated, or removed.",
       });
     });
     
     return () => {
-      unsubscribe();
+      unsubTeamMembers();
     };
-  }, [queryClient, toast]);
+  }, [queryClient]);
 
-  // Handle add team member form submission
-  const onAddSubmit = async (data: TeamMemberFormValues) => {
-    try {
-      await addTeamMember(data);
-      toast({
-        title: 'Team member added',
-        description: `${data.first_name} ${data.last_name} has been added to the team.`,
-        variant: 'default',
-      });
-      setIsAddDialogOpen(false);
-      addForm.reset();
-      queryClient.invalidateQueries({ queryKey: ['team-members'] });
-    } catch (error) {
-      console.error('Error adding team member:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to add team member. Please try again.',
-        variant: 'destructive',
-      });
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleRoleChange = (value: string) => {
+    if (value === 'admin' || value === 'salesperson') {
+      setFormData({ ...formData, role: value });
     }
   };
 
-  // Handle edit team member form submission
-  const onEditSubmit = async (data: TeamMemberFormValues) => {
-    if (!currentMember) return;
-    
-    try {
-      await updateTeamMember(currentMember.id, data);
-      toast({
-        title: 'Team member updated',
-        description: `${data.first_name} ${data.last_name}'s information has been updated.`,
-        variant: 'default',
-      });
-      setIsEditDialogOpen(false);
-      editForm.reset();
-      queryClient.invalidateQueries({ queryKey: ['team-members'] });
-    } catch (error) {
-      console.error('Error updating team member:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update team member. Please try again.',
-        variant: 'destructive',
-      });
-    }
+  const openAddDialog = () => {
+    setFormData({
+      first_name: '',
+      last_name: '',
+      email: '',
+      role: 'salesperson'
+    });
+    setIsAddDialogOpen(true);
   };
 
-  // Handle delete team member
-  const handleDeleteMember = async () => {
-    if (!currentMember) return;
-    
-    try {
-      await removeTeamMember(currentMember.id);
-      toast({
-        title: 'Team member removed',
-        description: `${currentMember.first_name} ${currentMember.last_name} has been removed from the team.`,
-        variant: 'default',
-      });
-      setIsDeleteDialogOpen(false);
-      setCurrentMember(null);
-      queryClient.invalidateQueries({ queryKey: ['team-members'] });
-    } catch (error) {
-      console.error('Error removing team member:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to remove team member. Please try again.',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  // Open edit dialog and populate form with member data
-  const handleEditMember = (member: TeamMember) => {
+  const openEditDialog = (member: TeamMember) => {
     setCurrentMember(member);
-    editForm.reset({
+    setFormData({
       first_name: member.first_name,
       last_name: member.last_name,
       email: member.email,
-      role: member.role,
+      role: member.role as 'admin' | 'salesperson'
     });
     setIsEditDialogOpen(true);
   };
 
-  // Open delete confirmation dialog
-  const handleDeleteConfirm = (member: TeamMember) => {
+  const openDeleteDialog = (member: TeamMember) => {
     setCurrentMember(member);
     setIsDeleteDialogOpen(true);
   };
 
-  // Filter team members based on active tab
-  const filteredMembers = teamMembers.filter(member => {
-    if (activeTab === 'all') return true;
-    return member.role === activeTab;
-  });
+  const handleAddTeamMember = async () => {
+    try {
+      if (!formData.first_name || !formData.last_name || !formData.email) {
+        toast({
+          title: "Missing information",
+          description: "Please fill in all fields.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      await addTeamMemberService({
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        email: formData.email,
+        role: formData.role
+      });
+      
+      toast({
+        title: "Team member added",
+        description: `${formData.first_name} ${formData.last_name} has been added to the team.`,
+      });
+      
+      setIsAddDialogOpen(false);
+    } catch (error) {
+      toast({
+        title: "Error adding team member",
+        description: "There was a problem adding the team member.",
+        variant: "destructive",
+      });
+      console.error("Error adding team member:", error);
+    }
+  };
+
+  const handleUpdateTeamMember = async () => {
+    if (!currentMember) return;
+    
+    try {
+      if (!formData.first_name || !formData.last_name || !formData.email) {
+        toast({
+          title: "Missing information",
+          description: "Please fill in all fields.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      await updateTeamMemberService(currentMember.id, {
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        email: formData.email,
+        role: formData.role
+      });
+      
+      toast({
+        title: "Team member updated",
+        description: `${formData.first_name} ${formData.last_name}'s information has been updated.`,
+      });
+      
+      setIsEditDialogOpen(false);
+    } catch (error) {
+      toast({
+        title: "Error updating team member",
+        description: "There was a problem updating the team member's information.",
+        variant: "destructive",
+      });
+      console.error("Error updating team member:", error);
+    }
+  };
+
+  const handleDeleteTeamMember = async () => {
+    if (!currentMember) return;
+    
+    try {
+      await deleteTeamMemberService(currentMember.id);
+      
+      toast({
+        title: "Team member removed",
+        description: `${currentMember.first_name} ${currentMember.last_name} has been removed from the team.`,
+      });
+      
+      setIsDeleteDialogOpen(false);
+    } catch (error) {
+      toast({
+        title: "Error removing team member",
+        description: "There was a problem removing the team member.",
+        variant: "destructive",
+      });
+      console.error("Error deleting team member:", error);
+    }
+  };
 
   if (isLoading) {
-    return <div className="flex justify-center items-center h-64">Loading team data...</div>;
-  }
-
-  if (error) {
     return (
-      <div className="card p-8 text-center">
-        <h2 className="text-xl font-bold mb-4">Error Loading Team Data</h2>
-        <p className="text-white/70 mb-6">There was a problem loading team data from the database.</p>
-        <Button onClick={() => queryClient.invalidateQueries({ queryKey: ['team-members'] })}>
-          Retry
-        </Button>
+      <div className="text-center py-20">
+        <h2 className="text-2xl font-bold mb-4">Loading team members...</h2>
       </div>
     );
   }
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Team Management</h1>
-        <Button onClick={() => setIsAddDialogOpen(true)}>
-          <UserPlus className="mr-2 h-4 w-4" /> Add Team Member
+        <Button onClick={openAddDialog}>
+          <UserPlus size={16} className="mr-2" />
+          Add Team Member
         </Button>
       </div>
       
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-        <TabsList className="bg-white/10">
-          <TabsTrigger value="all" className="data-[state=active]:bg-crm-accent">All</TabsTrigger>
-          <TabsTrigger value="admin" className="data-[state=active]:bg-crm-accent">Admins</TabsTrigger>
-          <TabsTrigger value="salesperson" className="data-[state=active]:bg-crm-accent">Salespeople</TabsTrigger>
-        </TabsList>
-      </Tabs>
-      
-      <div className="card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-white/20">
-                <th className="text-left py-4 px-4 font-medium">Name</th>
-                <th className="text-left py-4 px-4 font-medium">Email</th>
-                <th className="text-left py-4 px-4 font-medium">Role</th>
-                <th className="text-left py-4 px-4 font-medium">Last Active</th>
-                <th className="text-right py-4 px-4 font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredMembers.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="py-8 text-center text-white/70">
-                    No team members found. Add your first team member to get started.
-                  </td>
-                </tr>
-              ) : (
-                filteredMembers.map((member) => (
-                  <tr key={member.id} className="border-b border-white/10 hover:bg-white/5 transition-colors">
-                    <td className="py-4 px-4">{member.first_name} {member.last_name}</td>
-                    <td className="py-4 px-4">{member.email}</td>
-                    <td className="py-4 px-4">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        member.role === 'admin' ? 'bg-crm-accent text-white' : 'bg-white/10 text-white'
-                      }`}>
-                        {member.role === 'admin' ? 'Admin' : 'Salesperson'}
-                      </span>
-                    </td>
-                    <td className="py-4 px-4">
-                      {member.last_active ? 
-                        format(new Date(member.last_active), 'MMM d, yyyy HH:mm') : 
-                        'Not logged in yet'}
-                    </td>
-                    <td className="py-4 px-4 text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon" onClick={() => handleEditMember(member)}>
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDeleteConfirm(member)}>
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      {teamMembers.length === 0 ? (
+        <div className="text-center py-20 bg-white/5 rounded-lg">
+          <User size={64} className="mx-auto text-white/30" />
+          <h2 className="text-2xl font-bold mt-6 mb-2">No Team Members Yet</h2>
+          <p className="text-white/70 mb-8 max-w-md mx-auto">
+            Add your first team member to start collaborating and managing client relationships together.
+          </p>
+          <Button onClick={openAddDialog}>
+            <UserPlus size={16} className="mr-2" />
+            Add Your First Team Member
+          </Button>
         </div>
-      </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {teamMembers.map((member) => (
+            <Card key={member.id} className="border-white/10 overflow-hidden">
+              <div className={`h-3 ${member.role === 'admin' ? 'bg-blue-500' : 'bg-green-500'}`}></div>
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center justify-between">
+                  <span>{member.first_name} {member.last_name}</span>
+                  <div className="flex space-x-1">
+                    <Button size="icon" variant="ghost" onClick={() => openEditDialog(member)}>
+                      <Edit size={16} />
+                    </Button>
+                    <Button size="icon" variant="ghost" onClick={() => openDeleteDialog(member)}>
+                      <Trash2 size={16} />
+                    </Button>
+                  </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center">
+                    <Mail size={16} className="mr-2 text-white/70" />
+                    <span className="text-sm">{member.email}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Building size={16} className="mr-2 text-white/70" />
+                    <span className="text-sm capitalize">{member.role}</span>
+                  </div>
+                  {member.created_at && (
+                    <div className="text-xs text-white/50">
+                      Joined: {format(new Date(member.created_at), 'MMMM d, yyyy')}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
       
       {/* Add Team Member Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Add Team Member</DialogTitle>
-            <DialogDescription>
-              Add a new team member to your CRM system.
-            </DialogDescription>
           </DialogHeader>
-          
-          <Form {...addForm}>
-            <form onSubmit={addForm.handleSubmit(onAddSubmit)} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={addForm.control}
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="first_name">First Name</Label>
+                <Input
+                  id="first_name"
                   name="first_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>First Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="John" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={addForm.control}
-                  name="last_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Last Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Doe" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  value={formData.first_name}
+                  onChange={handleInputChange}
                 />
               </div>
-              
-              <FormField
-                control={addForm.control}
+              <div className="space-y-2">
+                <Label htmlFor="last_name">Last Name</Label>
+                <Input
+                  id="last_name"
+                  name="last_name"
+                  value={formData.last_name}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
                 name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="john.doe@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                type="email"
+                value={formData.email}
+                onChange={handleInputChange}
               />
-              
-              <FormField
-                control={addForm.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Role</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select role" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="admin">Admin</SelectItem>
-                        <SelectItem value="salesperson">Salesperson</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      Admins can manage team members and access all features.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <DialogFooter>
-                <Button variant="outline" type="button" onClick={() => setIsAddDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit">Add Team Member</Button>
-              </DialogFooter>
-            </form>
-          </Form>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="role">Role</Label>
+              <Select value={formData.role} onValueChange={handleRoleChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="salesperson">Salesperson</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleAddTeamMember}>Add Team Member</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
       
       {/* Edit Team Member Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Edit Team Member</DialogTitle>
-            <DialogDescription>
-              Update team member information.
-            </DialogDescription>
           </DialogHeader>
-          
-          <Form {...editForm}>
-            <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={editForm.control}
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit_first_name">First Name</Label>
+                <Input
+                  id="edit_first_name"
                   name="first_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>First Name</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={editForm.control}
-                  name="last_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Last Name</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  value={formData.first_name}
+                  onChange={handleInputChange}
                 />
               </div>
-              
-              <FormField
-                control={editForm.control}
+              <div className="space-y-2">
+                <Label htmlFor="edit_last_name">Last Name</Label>
+                <Input
+                  id="edit_last_name"
+                  name="last_name"
+                  value={formData.last_name}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit_email">Email</Label>
+              <Input
+                id="edit_email"
                 name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                type="email"
+                value={formData.email}
+                onChange={handleInputChange}
               />
-              
-              <FormField
-                control={editForm.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Role</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="admin">Admin</SelectItem>
-                        <SelectItem value="salesperson">Salesperson</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <DialogFooter>
-                <Button variant="outline" type="button" onClick={() => setIsEditDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit">Save Changes</Button>
-              </DialogFooter>
-            </form>
-          </Form>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit_role">Role</Label>
+              <Select value={formData.role} onValueChange={handleRoleChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="salesperson">Salesperson</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleUpdateTeamMember}>Update</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
       
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Team Member Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle className="flex items-center">
-              <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-              Confirm Deletion
-            </DialogTitle>
-            <DialogDescription>
-              Are you sure you want to remove {currentMember?.first_name} {currentMember?.last_name} from the team?
-              This action cannot be undone.
-            </DialogDescription>
+            <DialogTitle>Delete Team Member</DialogTitle>
           </DialogHeader>
-          
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-              <X className="h-4 w-4 mr-2" /> Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleDeleteMember}>
-              <Trash2 className="h-4 w-4 mr-2" /> Delete
-            </Button>
+          <p>
+            Are you sure you want to remove {currentMember?.first_name} {currentMember?.last_name} from the team?
+            This action cannot be undone.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeleteTeamMember}>Delete</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
