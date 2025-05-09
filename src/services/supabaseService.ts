@@ -1,8 +1,7 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { getStatusColor, getRecommendedAction, extractDomain, getDomainCompany } from '@/utils/clientUtils';
 import { format } from 'date-fns';
-import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import type { RealtimePostgresChangesPayload, RealtimeChannel } from '@supabase/supabase-js';
 
 // Types for Supabase tables
 export interface ProspectProfile {
@@ -607,7 +606,7 @@ export const setupRealTimeSubscription = (
   table: string, 
   event: 'INSERT' | 'UPDATE' | 'DELETE' | '*',
   callback: (payload: RealtimePostgresChangesPayload<Record<string, any>>) => void
-) => {
+): (() => void) => {
   const channel = supabase
     .channel(`table-changes:${table}`)
     .on(
@@ -618,7 +617,7 @@ export const setupRealTimeSubscription = (
         table: table
       },
       (payload) => {
-        callback(payload);
+        callback(payload as RealtimePostgresChangesPayload<Record<string, any>>);
       }
     )
     .subscribe();
