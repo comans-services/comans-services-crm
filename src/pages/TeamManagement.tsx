@@ -20,15 +20,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getTeamMembers, addTeamMember, updateTeamMember, removeTeamMember, getUserActivity, setupRealTimeSubscription } from '@/services/supabaseService';
+import { getTeamMembers, addTeamMember, updateTeamMember, removeTeamMember, getUserActivity, setupRealTimeSubscription, TeamMember } from '@/services/supabaseService';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { format } from 'date-fns';
 
 interface TeamMemberFormData {
   id?: string;
   first_name: string;
   last_name: string;
   email: string;
-  role: string;
+  role: 'admin' | 'salesperson';
 }
 
 const TeamManagement = () => {
@@ -38,7 +39,7 @@ const TeamManagement = () => {
     first_name: '',
     last_name: '',
     email: '',
-    role: 'Salesperson'
+    role: 'salesperson'
   });
 
   // Fetch team members
@@ -107,7 +108,7 @@ const TeamManagement = () => {
     });
   };
 
-  const handleEditMember = (member: any) => {
+  const handleEditMember = (member: TeamMember) => {
     setCurrentMember({
       id: member.id,
       first_name: member.first_name,
@@ -123,7 +124,7 @@ const TeamManagement = () => {
       first_name: '',
       last_name: '',
       email: '',
-      role: 'Salesperson'
+      role: 'salesperson'
     });
     setIsDialogOpen(true);
   };
@@ -169,6 +170,23 @@ const TeamManagement = () => {
       });
     }
   };
+
+  // Helper function to format time ago
+  function formatTimeAgo(date: Date): string {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffSecs = Math.floor(diffMs / 1000);
+    const diffMins = Math.floor(diffSecs / 60);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffSecs < 60) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+    if (diffDays < 30) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+    
+    return format(date, 'MMM d, yyyy');
+  }
 
   if (isLoadingTeam || isLoadingActivity) {
     return <div className="text-center py-10">Loading team data...</div>;
@@ -217,7 +235,7 @@ const TeamManagement = () => {
                     <TableCell className="text-white">{member.email}</TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded-full text-xs ${
-                        member.role === 'Admin' ? 'bg-crm-accent/20 text-crm-accent' : 'bg-blue-500/20 text-blue-500'
+                        member.role === 'admin' ? 'bg-crm-accent/20 text-crm-accent' : 'bg-blue-500/20 text-blue-500'
                       }`}>
                         {member.role}
                       </span>
@@ -226,7 +244,7 @@ const TeamManagement = () => {
                       <div className="flex items-center text-white/70">
                         <Clock size={14} className="mr-1" /> 
                         {member.last_active 
-                          ? `${formatTimeAgo(new Date(member.last_active))}`
+                          ? formatTimeAgo(new Date(member.last_active))
                           : 'Never'}
                       </div>
                     </TableCell>
@@ -341,11 +359,11 @@ const TeamManagement = () => {
                 <select
                   id="role"
                   value={currentMember.role}
-                  onChange={(e) => setCurrentMember({...currentMember, role: e.target.value})}
+                  onChange={(e) => setCurrentMember({...currentMember, role: e.target.value as 'admin' | 'salesperson'})}
                   className="px-3 py-2 bg-[#0f133e] border border-white/20 rounded-md focus:outline-none focus:ring-2 focus:ring-crm-accent/50 text-white w-full"
                 >
-                  <option value="Admin" className="bg-[#0f133e] text-white">Admin</option>
-                  <option value="Salesperson" className="bg-[#0f133e] text-white">Salesperson</option>
+                  <option value="admin" className="bg-[#0f133e] text-white">admin</option>
+                  <option value="salesperson" className="bg-[#0f133e] text-white">salesperson</option>
                 </select>
               </div>
             </div>
@@ -362,22 +380,5 @@ const TeamManagement = () => {
     </div>
   );
 };
-
-// Helper function to format time ago
-function formatTimeAgo(date: Date): string {
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffSecs = Math.floor(diffMs / 1000);
-  const diffMins = Math.floor(diffSecs / 60);
-  const diffHours = Math.floor(diffMins / 60);
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffSecs < 60) return 'Just now';
-  if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
-  if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
-  if (diffDays < 30) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
-  
-  return format(date, 'MMM d, yyyy');
-}
 
 export default TeamManagement;

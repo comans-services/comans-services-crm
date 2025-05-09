@@ -1,6 +1,7 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { getStatusColor, getRecommendedAction, extractDomain, getDomainCompany } from '@/utils/clientUtils';
-import { RealtimeChannel } from '@supabase/supabase-js';
+import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 // Types for Supabase tables
 export interface ProspectProfile {
@@ -42,7 +43,7 @@ export interface TeamMember {
   email: string;
   first_name: string;
   last_name: string;
-  role: string;
+  role: 'admin' | 'salesperson';
   last_active?: string;
   created_at: string;
   updated_at: string;
@@ -77,41 +78,43 @@ export interface ProspectWithEngagement extends ProspectProfile {
 }
 
 // Helper function to extract action items from document
-export function extractActionItemsFromDocument(documentText: string): ActionItem[] {
+export function extractActionItemsFromDocument(documentText: string): Promise<ActionItem[]> {
   // This is a mock implementation that simulates AI extraction
-  const currentDate = new Date();
-  const twoWeeksFromNow = new Date(currentDate);
-  twoWeeksFromNow.setDate(currentDate.getDate() + 14);
-  
-  return [
-    {
-      id: `ai-${Date.now()}-1`,
-      title: 'Follow up on pricing discussion',
-      description: 'Discuss the updated pricing structure based on the client\'s requirements',
-      priority: 'high',
-      dueDate: new Date(currentDate.setDate(currentDate.getDate() + 2)).toISOString(),
-      createdAt: new Date().toISOString(),
-      completed: false
-    },
-    {
-      id: `ai-${Date.now()}-2`,
-      title: 'Send product specifications',
-      description: 'Share detailed specifications for the enterprise plan',
-      priority: 'medium',
-      dueDate: new Date(currentDate.setDate(currentDate.getDate() + 5)).toISOString(),
-      createdAt: new Date().toISOString(),
-      completed: false
-    },
-    {
-      id: `ai-${Date.now()}-3`,
-      title: 'Schedule technical demo',
-      description: 'Arrange a technical demonstration with the IT department',
-      priority: 'low',
-      dueDate: twoWeeksFromNow.toISOString(),
-      createdAt: new Date().toISOString(),
-      completed: false
-    }
-  ];
+  return new Promise((resolve) => {
+    const currentDate = new Date();
+    const twoWeeksFromNow = new Date(currentDate);
+    twoWeeksFromNow.setDate(currentDate.getDate() + 14);
+    
+    resolve([
+      {
+        id: `ai-${Date.now()}-1`,
+        title: 'Follow up on pricing discussion',
+        description: 'Discuss the updated pricing structure based on the client\'s requirements',
+        priority: 'high',
+        dueDate: new Date(currentDate.setDate(currentDate.getDate() + 2)).toISOString(),
+        createdAt: new Date().toISOString(),
+        completed: false
+      },
+      {
+        id: `ai-${Date.now()}-2`,
+        title: 'Send product specifications',
+        description: 'Share detailed specifications for the enterprise plan',
+        priority: 'medium',
+        dueDate: new Date(currentDate.setDate(currentDate.getDate() + 5)).toISOString(),
+        createdAt: new Date().toISOString(),
+        completed: false
+      },
+      {
+        id: `ai-${Date.now()}-3`,
+        title: 'Schedule technical demo',
+        description: 'Arrange a technical demonstration with the IT department',
+        priority: 'low',
+        dueDate: twoWeeksFromNow.toISOString(),
+        createdAt: new Date().toISOString(),
+        completed: false
+      }
+    ]);
+  });
 }
 
 /**
@@ -172,7 +175,12 @@ export const getProspects = async (): Promise<ProspectWithEngagement[]> => {
       // Find communications for this prospect
       const prospectCommunications = (communications || [])
         .filter(c => c.prospect_id === profile.id)
-        .sort((a, b) => new Date(b.date_of_communication).getTime() - new Date(a.date_of_communication).getTime());
+        .sort((a, b) => new Date(b.date_of_communication).getTime() - new Date(a.date_of_communication).getTime())
+        .map(comm => ({
+          ...comm,
+          prospect_first_name: profile.first_name,
+          prospect_last_name: profile.last_name
+        }));
 
       // Calculate days since last contact
       const daysSinceLastContact = engagement.last_contact_date
@@ -276,16 +284,9 @@ export const getProspectById = async (id: string): Promise<ProspectWithEngagemen
 
     // Map communications
     const prospectCommunications = communications?.map(comm => ({
-      id: comm.id,
-      prospect_id: comm.prospect_id,
+      ...comm,
       prospect_first_name: profile.first_name,
-      prospect_last_name: profile.last_name,
-      salesperson_email: comm.salesperson_email,
-      subject_text: comm.subject_text,
-      body_text: comm.body_text,
-      date_of_communication: comm.date_of_communication,
-      created_at: comm.created_at,
-      updated_at: comm.updated_at
+      prospect_last_name: profile.last_name
     })) || [];
 
     return {
@@ -388,6 +389,8 @@ export const recordCommunication = async (communication: {
   subject_text: string;
   body_text?: string;
   salesperson_email: string;
+  prospect_first_name: string;
+  prospect_last_name: string;
 }): Promise<SalesTracking> => {
   // Get current date
   const now = new Date().toISOString();
@@ -419,7 +422,11 @@ export const recordCommunication = async (communication: {
     })
     .eq('prospect_id', communication.prospect_id);
 
-  return data;
+  return {
+    ...data,
+    prospect_first_name: communication.prospect_first_name,
+    prospect_last_name: communication.prospect_last_name
+  };
 };
 
 /**
@@ -445,7 +452,7 @@ export const addTeamMember = async (member: {
   first_name: string;
   last_name: string;
   email: string;
-  role: string;
+  role: 'admin' | 'salesperson';
 }) => {
   const { data, error } = await supabase
     .from('app_user')
@@ -468,7 +475,7 @@ export const updateTeamMember = async (id: string, updates: {
   first_name?: string;
   last_name?: string;
   email?: string;
-  role?: string;
+  role?: 'admin' | 'salesperson';
 }) => {
   const { data, error } = await supabase
     .from('app_user')
@@ -548,18 +555,18 @@ export const recordUserActivity = async (activity: {
 export const setupRealTimeSubscription = (
   table: string, 
   event: 'INSERT' | 'UPDATE' | 'DELETE' | '*',
-  callback: (payload: any) => void
-) => {
+  callback: (payload: RealtimePostgresChangesPayload<Record<string, any>>) => void
+): (() => void) => {
   const channel = supabase
     .channel(`table-changes:${table}`)
     .on(
-      'postgres_changes',
+      'postgres_changes' as any,
       {
         event: event,
         schema: 'public',
         table: table
       },
-      callback
+      callback as any
     )
     .subscribe();
 
