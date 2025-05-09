@@ -3,13 +3,14 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit, Mail, Phone, Building, User, FileText, Upload } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getProspectById, setupRealTimeSubscription, ActionItem, RealtimePostgresChangesPayload } from '@/services/supabaseService';
+import { getProspectById, setupRealTimeSubscription } from '@/services/supabaseService';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/components/ui/use-toast';
 import DocumentUploader from '@/components/clients/DocumentUploader';
 import ActionItemsList from '@/components/clients/ActionItemsList';
+import { ActionItem } from '@/services/supabaseService';
 
 const ClientDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -30,22 +31,22 @@ const ClientDetail = () => {
     if (!clientId) return;
     
     // Subscribe to changes to this prospect
-    const unsubProspect = setupRealTimeSubscription('prospect_profile', '*', (payload: RealtimePostgresChangesPayload<Record<string, any>>) => {
-      if (payload.new && 'id' in payload.new && payload.new.id === clientId) {
+    const unsubProspect = setupRealTimeSubscription('prospect_profile', '*', (payload) => {
+      if (payload.new?.id === clientId) {
         queryClient.invalidateQueries({ queryKey: ['client', clientId] });
       }
     });
     
     // Subscribe to engagement changes
-    const unsubEngagement = setupRealTimeSubscription('prospect_engagement', '*', (payload: RealtimePostgresChangesPayload<Record<string, any>>) => {
-      if (payload.new && 'prospect_id' in payload.new && payload.new.prospect_id === clientId) {
+    const unsubEngagement = setupRealTimeSubscription('prospect_engagement', '*', (payload) => {
+      if (payload.new?.prospect_id === clientId) {
         queryClient.invalidateQueries({ queryKey: ['client', clientId] });
       }
     });
     
     // Subscribe to sales tracking changes
-    const unsubSalesTracking = setupRealTimeSubscription('sales_tracking', '*', (payload: RealtimePostgresChangesPayload<Record<string, any>>) => {
-      if (payload.new && 'prospect_id' in payload.new && payload.new.prospect_id === clientId) {
+    const unsubSalesTracking = setupRealTimeSubscription('sales_tracking', '*', (payload) => {
+      if (payload.new?.prospect_id === clientId) {
         queryClient.invalidateQueries({ queryKey: ['client', clientId] });
         toast({
           title: "Communication Updated",

@@ -1,5 +1,5 @@
 
-import { ProspectProfile, ProspectWithEngagement } from '@/services/supabaseService';
+import { ProspectProfile, ProspectWithEngagement } from '@/services/mockDataService';
 
 /**
  * Extracts the domain from an email address

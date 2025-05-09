@@ -1,7 +1,6 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { getStatusColor, getRecommendedAction, extractDomain, getDomainCompany } from '@/utils/clientUtils';
-import { format } from 'date-fns';
-import type { RealtimePostgresChangesPayload, RealtimeChannel } from '@supabase/supabase-js';
 
 // Types for Supabase tables
 export interface ProspectProfile {
@@ -43,7 +42,7 @@ export interface TeamMember {
   email: string;
   first_name: string;
   last_name: string;
-  role: "admin" | "salesperson";
+  role: string;
   last_active?: string;
   created_at: string;
   updated_at: string;
@@ -55,7 +54,6 @@ export interface UserActivity {
   activity_type: string;
   activity_detail?: any;
   occurred_at: string;
-  app_user?: TeamMember;
 }
 
 export interface ActionItem {
@@ -66,7 +64,6 @@ export interface ActionItem {
   dueDate: string;
   createdAt: string;
   completed: boolean;
-  status?: 'todo' | 'in-progress' | 'completed';
 }
 
 export interface ProspectWithEngagement extends ProspectProfile {
@@ -80,76 +77,41 @@ export interface ProspectWithEngagement extends ProspectProfile {
 }
 
 // Helper function to extract action items from document
-export function extractActionItemsFromDocument(fileName: string): Promise<ActionItem[]> {
-  return new Promise((resolve) => {
-    // Simulate API call delay
-    setTimeout(() => {
-      // Generate 2-4 random action items
-      const numberOfItems = Math.floor(Math.random() * 3) + 2;
-      const actionItems: ActionItem[] = [];
-      
-      const priorities = ['low', 'medium', 'high'] as const;
-      
-      // Sample action item titles based on document type
-      const fileExtension = fileName.split('.').pop()?.toLowerCase();
-      const actionTitles = {
-        pdf: [
-          'Review product specifications',
-          'Schedule follow-up call',
-          'Prepare proposal',
-          'Send case studies',
-          'Discuss budget constraints'
-        ],
-        docx: [
-          'Update contract terms',
-          'Finalize pricing structure',
-          'Address legal concerns',
-          'Share testimonials',
-          'Present ROI analysis'
-        ],
-        xlsx: [
-          'Analyze financial projections',
-          'Compare pricing options',
-          'Review purchase history',
-          'Update forecast model',
-          'Discuss volume discounts'
-        ],
-        default: [
-          'Schedule next meeting',
-          'Send additional information',
-          'Follow up on questions',
-          'Prepare presentation',
-          'Request stakeholder meeting'
-        ]
-      };
-      
-      const titles = actionTitles[fileExtension as keyof typeof actionTitles] || actionTitles.default;
-      
-      // Generate random action items
-      for (let i = 0; i < numberOfItems; i++) {
-        const randomTitleIndex = Math.floor(Math.random() * titles.length);
-        const daysToAdd = Math.floor(Math.random() * 14) + 1;
-        const today = new Date();
-        const dueDate = new Date(today.setDate(today.getDate() + daysToAdd));
-        
-        actionItems.push({
-          id: crypto.randomUUID(),
-          title: titles[randomTitleIndex],
-          description: `AI extracted task from ${fileName}. This is a simulated action item that would be created by analyzing the content of the uploaded document.`,
-          dueDate: dueDate.toISOString(),
-          priority: priorities[Math.floor(Math.random() * priorities.length)],
-          completed: false,
-          status: 'todo',
-          createdAt: new Date().toISOString()
-        });
-        
-        // Remove used title to avoid duplicates
-        titles.splice(randomTitleIndex, 1);
-      }
-      
-      resolve(actionItems);
-    }, 1500); // 1.5 second delay to simulate processing
-  });
+export function extractActionItemsFromDocument(documentText: string): ActionItem[] {
+  // This is a mock implementation that simulates AI extraction
+  const currentDate = new Date();
+  const twoWeeksFromNow = new Date(currentDate);
+  twoWeeksFromNow.setDate(currentDate.getDate() + 14);
+  
+  return [
+    {
+      id: `ai-${Date.now()}-1`,
+      title: 'Follow up on pricing discussion',
+      description: 'Discuss the updated pricing structure based on the client\'s requirements',
+      priority: 'high',
+      dueDate: new Date(currentDate.setDate(currentDate.getDate() + 2)).toISOString(),
+      createdAt: new Date().toISOString(),
+      completed: false
+    },
+    {
+      id: `ai-${Date.now()}-2`,
+      title: 'Send product specifications',
+      description: 'Share detailed specifications for the enterprise plan',
+      priority: 'medium',
+      dueDate: new Date(currentDate.setDate(currentDate.getDate() + 5)).toISOString(),
+      createdAt: new Date().toISOString(),
+      completed: false
+    },
+    {
+      id: `ai-${Date.now()}-3`,
+      title: 'Schedule technical demo',
+      description: 'Arrange a technical demonstration with the IT department',
+      priority: 'low',
+      dueDate: twoWeeksFromNow.toISOString(),
+      createdAt: new Date().toISOString(),
+      completed: false
+    }
+  ];
 }
 
 /**
@@ -210,11 +172,6 @@ export const getProspects = async (): Promise<ProspectWithEngagement[]> => {
       // Find communications for this prospect
       const prospectCommunications = (communications || [])
         .filter(c => c.prospect_id === profile.id)
-        .map(c => ({
-          ...c,
-          prospect_first_name: profile.first_name,
-          prospect_last_name: profile.last_name
-        }))
         .sort((a, b) => new Date(b.date_of_communication).getTime() - new Date(a.date_of_communication).getTime());
 
       // Calculate days since last contact
@@ -263,7 +220,7 @@ export const getProspectById = async (id: string): Promise<ProspectWithEngagemen
       .select('*')
       .eq('id', id)
       .single();
-    
+
     if (profileError) {
       console.error('Error fetching prospect profile:', profileError);
       throw new Error(profileError.message);
@@ -435,19 +392,7 @@ export const recordCommunication = async (communication: {
   // Get current date
   const now = new Date().toISOString();
 
-  // Get prospect details first
-  const { data: prospect, error: prospectError } = await supabase
-    .from('prospect_profile')
-    .select('first_name, last_name')
-    .eq('id', communication.prospect_id)
-    .single();
-    
-  if (prospectError) {
-    console.error('Error getting prospect details:', prospectError);
-    throw new Error(prospectError.message);
-  }
-
-  // Insert communication record with prospect name details
+  // Insert communication record
   const { data, error } = await supabase
     .from('sales_tracking')
     .insert({
@@ -455,9 +400,7 @@ export const recordCommunication = async (communication: {
       subject_text: communication.subject_text,
       body_text: communication.body_text || null,
       salesperson_email: communication.salesperson_email,
-      date_of_communication: now,
-      prospect_first_name: prospect.first_name,
-      prospect_last_name: prospect.last_name
+      date_of_communication: now
     })
     .select()
     .single();
@@ -476,13 +419,13 @@ export const recordCommunication = async (communication: {
     })
     .eq('prospect_id', communication.prospect_id);
 
-  return data as SalesTracking;
+  return data;
 };
 
 /**
  * Fetches all team members (app_users)
  */
-export const getTeamMembers = async (): Promise<TeamMember[]> => {
+export const getTeamMembers = async () => {
   const { data, error } = await supabase
     .from('app_user')
     .select('*');
@@ -502,8 +445,8 @@ export const addTeamMember = async (member: {
   first_name: string;
   last_name: string;
   email: string;
-  role: "admin" | "salesperson";
-}): Promise<TeamMember> => {
+  role: string;
+}) => {
   const { data, error } = await supabase
     .from('app_user')
     .insert(member)
@@ -525,8 +468,8 @@ export const updateTeamMember = async (id: string, updates: {
   first_name?: string;
   last_name?: string;
   email?: string;
-  role?: "admin" | "salesperson";
-}): Promise<TeamMember> => {
+  role?: string;
+}) => {
   const { data, error } = await supabase
     .from('app_user')
     .update(updates)
@@ -545,7 +488,7 @@ export const updateTeamMember = async (id: string, updates: {
 /**
  * Removes a team member
  */
-export const removeTeamMember = async (id: string): Promise<boolean> => {
+export const removeTeamMember = async (id: string) => {
   const { error } = await supabase
     .from('app_user')
     .delete()
@@ -562,7 +505,7 @@ export const removeTeamMember = async (id: string): Promise<boolean> => {
 /**
  * Gets user activity logs
  */
-export const getUserActivity = async (limit = 10): Promise<UserActivity[]> => {
+export const getUserActivity = async (limit = 10) => {
   const { data, error } = await supabase
     .from('user_activity')
     .select('*, app_user!user_activity_user_id_fkey(*)')
@@ -584,7 +527,7 @@ export const recordUserActivity = async (activity: {
   user_id: string;
   activity_type: string;
   activity_detail?: any;
-}): Promise<UserActivity> => {
+}) => {
   const { data, error } = await supabase
     .from('user_activity')
     .insert(activity)
@@ -605,19 +548,19 @@ export const recordUserActivity = async (activity: {
 export const setupRealTimeSubscription = (
   table: string, 
   event: 'INSERT' | 'UPDATE' | 'DELETE' | '*',
-  callback: (payload: RealtimePostgresChangesPayload<Record<string, any>>) => void
-): (() => void) => {
+  callback: (payload: any) => void
+) => {
   const channel = supabase
-    .channel(`table-changes:${table}`)
+    .channel('table-changes')
     .on(
       'postgres_changes',
-      { 
+      {
         event: event,
         schema: 'public',
         table: table
       },
       (payload) => {
-        callback(payload as RealtimePostgresChangesPayload<Record<string, any>>);
+        callback(payload);
       }
     )
     .subscribe();
