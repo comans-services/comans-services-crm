@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { getStatusColor, getRecommendedAction, extractDomain, getDomainCompany } from '@/utils/clientUtils';
+import { format } from 'date-fns';
 
 // Types for Supabase tables
 export interface ProspectProfile {
@@ -54,6 +55,7 @@ export interface UserActivity {
   activity_type: string;
   activity_detail?: any;
   occurred_at: string;
+  app_user?: TeamMember;
 }
 
 export interface ActionItem {
@@ -425,7 +427,7 @@ export const recordCommunication = async (communication: {
 /**
  * Fetches all team members (app_users)
  */
-export const getTeamMembers = async () => {
+export const getTeamMembers = async (): Promise<TeamMember[]> => {
   const { data, error } = await supabase
     .from('app_user')
     .select('*');
@@ -446,7 +448,7 @@ export const addTeamMember = async (member: {
   last_name: string;
   email: string;
   role: string;
-}) => {
+}): Promise<TeamMember> => {
   const { data, error } = await supabase
     .from('app_user')
     .insert(member)
@@ -469,7 +471,7 @@ export const updateTeamMember = async (id: string, updates: {
   last_name?: string;
   email?: string;
   role?: string;
-}) => {
+}): Promise<TeamMember> => {
   const { data, error } = await supabase
     .from('app_user')
     .update(updates)
@@ -488,7 +490,7 @@ export const updateTeamMember = async (id: string, updates: {
 /**
  * Removes a team member
  */
-export const removeTeamMember = async (id: string) => {
+export const removeTeamMember = async (id: string): Promise<boolean> => {
   const { error } = await supabase
     .from('app_user')
     .delete()
@@ -505,7 +507,7 @@ export const removeTeamMember = async (id: string) => {
 /**
  * Gets user activity logs
  */
-export const getUserActivity = async (limit = 10) => {
+export const getUserActivity = async (limit = 10): Promise<UserActivity[]> => {
   const { data, error } = await supabase
     .from('user_activity')
     .select('*, app_user!user_activity_user_id_fkey(*)')
@@ -527,7 +529,7 @@ export const recordUserActivity = async (activity: {
   user_id: string;
   activity_type: string;
   activity_detail?: any;
-}) => {
+}): Promise<UserActivity> => {
   const { data, error } = await supabase
     .from('user_activity')
     .insert(activity)

@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/table";
 import { getTeamMembers, addTeamMember, updateTeamMember, removeTeamMember, getUserActivity, setupRealTimeSubscription } from '@/services/supabaseService';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { format } from 'date-fns';
 
 interface TeamMemberFormData {
   id?: string;
@@ -200,11 +201,13 @@ const TeamManagement = () => {
                   <TableHead className="text-white">Email</TableHead>
                   <TableHead className="text-white">Role</TableHead>
                   <TableHead className="text-white">Last Active</TableHead>
+                  <TableHead className="text-white">Created At</TableHead>
+                  <TableHead className="text-white">Updated At</TableHead>
                   <TableHead className="text-right text-white">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {teamMembers.map((member) => (
+                {Array.isArray(teamMembers) && teamMembers.map((member) => (
                   <TableRow key={member.id} className="border-white/10">
                     <TableCell className="font-medium text-white">
                       <div className="flex items-center">
@@ -226,9 +229,15 @@ const TeamManagement = () => {
                       <div className="flex items-center text-white/70">
                         <Clock size={14} className="mr-1" /> 
                         {member.last_active 
-                          ? `${formatTimeAgo(new Date(member.last_active))}`
+                          ? formatTimeAgo(new Date(member.last_active))
                           : 'Never'}
                       </div>
+                    </TableCell>
+                    <TableCell className="text-white">
+                      {member.created_at ? format(new Date(member.created_at), 'MMM d, yyyy') : 'N/A'}
+                    </TableCell>
+                    <TableCell className="text-white">
+                      {member.updated_at ? format(new Date(member.updated_at), 'MMM d, yyyy') : 'N/A'}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end space-x-2">
@@ -253,7 +262,7 @@ const TeamManagement = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {activityLog.length > 0 ? activityLog.map((log) => (
+              {Array.isArray(activityLog) && activityLog.length > 0 ? activityLog.map((log) => (
                 <div key={log.id} className="flex items-start border-b border-white/10 pb-4 last:border-0">
                   <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center mr-3">
                     <User size={14} />
