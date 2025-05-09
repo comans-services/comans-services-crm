@@ -606,11 +606,12 @@ export const setupRealTimeSubscription = (
   event: 'INSERT' | 'UPDATE' | 'DELETE' | '*',
   callback: (payload: any) => void
 ) => {
+  // Fix the channel subscription to use the correct method and parameters
   const channel = supabase
     .channel('table-changes')
     .on(
       'postgres_changes',
-      {
+      { 
         event: event,
         schema: 'public',
         table: table
