@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { getStatusColor, getRecommendedAction, extractDomain, getDomainCompany } from '@/utils/clientUtils';
 import { format } from 'date-fns';
@@ -606,9 +607,9 @@ export const setupRealTimeSubscription = (
   event: 'INSERT' | 'UPDATE' | 'DELETE' | '*',
   callback: (payload: any) => void
 ) => {
-  // Fix the channel subscription to use the correct method and parameters
+  // Update to use the v2 Supabase Realtime channel API
   const channel = supabase
-    .channel('table-changes')
+    .channel(`table-changes:${table}`)
     .on(
       'postgres_changes',
       { 
