@@ -1,6 +1,6 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { getStatusColor, getRecommendedAction, extractDomain, getDomainCompany } from '@/utils/clientUtils';
+import { RealtimeChannel } from '@supabase/supabase-js';
 
 // Types for Supabase tables
 export interface ProspectProfile {
@@ -551,7 +551,7 @@ export const setupRealTimeSubscription = (
   callback: (payload: any) => void
 ) => {
   const channel = supabase
-    .channel('table-changes')
+    .channel(`table-changes:${table}`)
     .on(
       'postgres_changes',
       {
@@ -559,9 +559,7 @@ export const setupRealTimeSubscription = (
         schema: 'public',
         table: table
       },
-      (payload) => {
-        callback(payload);
-      }
+      callback
     )
     .subscribe();
 

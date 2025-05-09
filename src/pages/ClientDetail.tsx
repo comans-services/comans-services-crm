@@ -32,21 +32,21 @@ const ClientDetail = () => {
     
     // Subscribe to changes to this prospect
     const unsubProspect = setupRealTimeSubscription('prospect_profile', '*', (payload) => {
-      if (payload.new?.id === clientId) {
+      if (payload.new && 'id' in payload.new && payload.new.id === clientId) {
         queryClient.invalidateQueries({ queryKey: ['client', clientId] });
       }
     });
     
     // Subscribe to engagement changes
     const unsubEngagement = setupRealTimeSubscription('prospect_engagement', '*', (payload) => {
-      if (payload.new?.prospect_id === clientId) {
+      if (payload.new && 'prospect_id' in payload.new && payload.new.prospect_id === clientId) {
         queryClient.invalidateQueries({ queryKey: ['client', clientId] });
       }
     });
     
     // Subscribe to sales tracking changes
     const unsubSalesTracking = setupRealTimeSubscription('sales_tracking', '*', (payload) => {
-      if (payload.new?.prospect_id === clientId) {
+      if (payload.new && 'prospect_id' in payload.new && payload.new.prospect_id === clientId) {
         queryClient.invalidateQueries({ queryKey: ['client', clientId] });
         toast({
           title: "Communication Updated",
