@@ -41,8 +41,6 @@ const ProspectCard: React.FC<ProspectCardProps> = ({ prospect, index }) => {
       // Remove any transition that could make the card lag behind cursor
       transition: 'none',
       // Allow click-through for a smoother experience
-      pointerEvents: 'none',
-      // Ensure width matches original width to prevent resizing during drag
       width: draggableStyle?.width || 'auto',
       cursor: 'grabbing',
     } : {}),
