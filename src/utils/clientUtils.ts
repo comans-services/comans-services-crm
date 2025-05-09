@@ -1,54 +1,73 @@
-import { format } from 'date-fns';
-import { ProspectWithEngagement } from '@/services/supabaseService';
 
-export const formatProspectData = (prospects: ProspectWithEngagement[]) => {
-  return prospects.map(prospect => {
-    const daysSinceLastContact = calculateDaysSinceLastContact(prospect.engagement.last_contact_date);
-    const statusColor = getStatusColor(daysSinceLastContact);
-    const recommendedAction = getRecommendedAction(daysSinceLastContact);
+import { ProspectProfile, ProspectWithEngagement } from '@/services/mockDataService';
 
-    return {
-      ...prospect,
-      daysSinceLastContact,
-      statusColor,
-      recommendedAction,
-    };
+/**
+ * Extracts the domain from an email address
+ */
+export const extractDomain = (email: string): string => {
+  const match = email.match(/@([^@]+)$/);
+  return match ? match[1] : '';
+};
+
+/**
+ * Gets the company name from a domain
+ */
+export const getDomainCompany = (domain: string): string => {
+  return domain.split('.')[0] || '';
+};
+
+/**
+ * Groups prospects by company domain
+ */
+export const groupProspectsByDomain = (
+  prospects: ProspectWithEngagement[]
+): Record<string, ProspectWithEngagement[]> => {
+  const companiesMap: Record<string, ProspectWithEngagement[]> = {};
+  
+  prospects.forEach(prospect => {
+    const domain = extractDomain(prospect.email);
+    const company = getDomainCompany(domain);
+    
+    if (!companiesMap[company]) {
+      companiesMap[company] = [];
+    }
+    
+    companiesMap[company].push(prospect);
   });
+  
+  return companiesMap;
 };
 
-export const calculateDaysSinceLastContact = (lastContactDate: string | null): number | null => {
-  if (!lastContactDate) {
-    return null;
-  }
-
-  const lastContact = new Date(lastContactDate);
-  const today = new Date();
-  const differenceInTime = today.getTime() - lastContact.getTime();
-  const differenceInDays = Math.floor(differenceInTime / (1000 * 3600 * 24));
-
-  return differenceInDays;
-};
-
+/**
+ * Determines the status color based on days since last contact
+ */
 export const getStatusColor = (daysSinceLastContact: number | null): string => {
   if (daysSinceLastContact === null) {
     return 'gray';
-  } else if (daysSinceLastContact <= 7) {
-    return 'green';
-  } else if (daysSinceLastContact <= 30) {
-    return 'yellow';
+  } else if (daysSinceLastContact <= 2) {
+    return 'green-500';
+  } else if (daysSinceLastContact <= 5) {
+    return 'yellow-500';
+  } else if (daysSinceLastContact <= 10) {
+    return 'orange-500';
   } else {
-    return 'red';
+    return 'red-500';
   }
 };
 
+/**
+ * Determines the recommended action based on days since last contact
+ */
 export const getRecommendedAction = (daysSinceLastContact: number | null): string => {
   if (daysSinceLastContact === null) {
-    return 'Schedule initial contact';
-  } else if (daysSinceLastContact <= 7) {
-    return 'Maintain regular contact';
-  } else if (daysSinceLastContact <= 30) {
-    return 'Re-engage the client';
+    return 'Initial contact recommended';
+  } else if (daysSinceLastContact <= 2) {
+    return 'Follow up next week';
+  } else if (daysSinceLastContact <= 5) {
+    return 'Follow up this week';
+  } else if (daysSinceLastContact <= 10) {
+    return 'Follow up today';
   } else {
-    return 'Assess and revive the relationship';
+    return 'Urgent follow up required';
   }
 };

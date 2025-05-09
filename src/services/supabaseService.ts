@@ -1,7 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { getStatusColor, getRecommendedAction, extractDomain, getDomainCompany } from '@/utils/clientUtils';
-import { format } from 'date-fns';
 
 // Types for Supabase tables
 export interface ProspectProfile {
@@ -43,7 +42,7 @@ export interface TeamMember {
   email: string;
   first_name: string;
   last_name: string;
-  role: 'admin' | 'salesperson';
+  role: string;
   last_active?: string;
   created_at: string;
   updated_at: string;
@@ -170,15 +169,10 @@ export const getProspects = async (): Promise<ProspectWithEngagement[]> => {
         updated_at: profile.updated_at
       };
 
-      // Find communications for this prospect and add required fields
+      // Find communications for this prospect
       const prospectCommunications = (communications || [])
         .filter(c => c.prospect_id === profile.id)
-        .sort((a, b) => new Date(b.date_of_communication).getTime() - new Date(a.date_of_communication).getTime())
-        .map(comm => ({
-          ...comm,
-          prospect_first_name: profile.first_name,
-          prospect_last_name: profile.last_name
-        }));
+        .sort((a, b) => new Date(b.date_of_communication).getTime() - new Date(a.date_of_communication).getTime());
 
       // Calculate days since last contact
       const daysSinceLastContact = engagement.last_contact_date
@@ -280,11 +274,18 @@ export const getProspectById = async (id: string): Promise<ProspectWithEngagemen
     const domain = extractDomain(profile.email);
     const company = profile.company || getDomainCompany(domain);
 
-    // Map communications with required fields
+    // Map communications
     const prospectCommunications = communications?.map(comm => ({
-      ...comm,
+      id: comm.id,
+      prospect_id: comm.prospect_id,
       prospect_first_name: profile.first_name,
-      prospect_last_name: profile.last_name
+      prospect_last_name: profile.last_name,
+      salesperson_email: comm.salesperson_email,
+      subject_text: comm.subject_text,
+      body_text: comm.body_text,
+      date_of_communication: comm.date_of_communication,
+      created_at: comm.created_at,
+      updated_at: comm.updated_at
     })) || [];
 
     return {
@@ -390,18 +391,6 @@ export const recordCommunication = async (communication: {
 }): Promise<SalesTracking> => {
   // Get current date
   const now = new Date().toISOString();
-  
-  // Get prospect details for adding to the communication record
-  const { data: prospect, error: prospectError } = await supabase
-    .from('prospect_profile')
-    .select('first_name, last_name')
-    .eq('id', communication.prospect_id)
-    .single();
-  
-  if (prospectError) {
-    console.error('Error fetching prospect details:', prospectError);
-    throw new Error(prospectError.message);
-  }
 
   // Insert communication record
   const { data, error } = await supabase
@@ -430,12 +419,7 @@ export const recordCommunication = async (communication: {
     })
     .eq('prospect_id', communication.prospect_id);
 
-  // Return the complete SalesTracking object
-  return {
-    ...data,
-    prospect_first_name: prospect.first_name,
-    prospect_last_name: prospect.last_name
-  };
+  return data;
 };
 
 /**
@@ -461,7 +445,7 @@ export const addTeamMember = async (member: {
   first_name: string;
   last_name: string;
   email: string;
-  role: 'admin' | 'salesperson';
+  role: string;
 }) => {
   const { data, error } = await supabase
     .from('app_user')
@@ -484,7 +468,7 @@ export const updateTeamMember = async (id: string, updates: {
   first_name?: string;
   last_name?: string;
   email?: string;
-  role?: 'admin' | 'salesperson';
+  role?: string;
 }) => {
   const { data, error } = await supabase
     .from('app_user')
@@ -574,7 +558,7 @@ export const setupRealTimeSubscription = (
         event: event,
         schema: 'public',
         table: table
-      } as any,
+      },
       (payload) => {
         callback(payload);
       }

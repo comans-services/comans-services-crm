@@ -3,12 +3,14 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit, Mail, Phone, Building, User, FileText, Upload } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getProspectById, setupRealTimeSubscription, ActionItem } from '@/services/supabaseService';
+import { getProspectById, setupRealTimeSubscription } from '@/services/supabaseService';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/components/ui/use-toast';
+import DocumentUploader from '@/components/clients/DocumentUploader';
 import ActionItemsList from '@/components/clients/ActionItemsList';
+import { ActionItem } from '@/services/supabaseService';
 
 const ClientDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -59,6 +61,10 @@ const ClientDetail = () => {
       unsubSalesTracking();
     };
   }, [clientId, queryClient]);
+
+  const handleActionItemsExtracted = (items: ActionItem[]) => {
+    setActionItems(prevItems => [...items, ...prevItems]);
+  };
   
   if (isLoading) {
     return (
@@ -190,9 +196,15 @@ const ClientDetail = () => {
       </div>
       
       <div className="mt-8">
+        <DocumentUploader 
+          clientId={clientId} 
+          clientName={`${client.first_name} ${client.last_name}`}
+          onActionItemsExtracted={handleActionItemsExtracted}
+        />
+
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle className="text-xl font-bold">Action Items</CardTitle>
+            <CardTitle className="text-xl font-bold">AI Generated Action Items</CardTitle>
           </CardHeader>
           <CardContent>
             <ActionItemsList items={actionItems} />

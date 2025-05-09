@@ -24,6 +24,7 @@ const ProspectCard: React.FC<ProspectCardProps> = ({ prospect, index }) => {
     // Critical alignment fixes for cursor
     ...(isDragging ? {
       // Remove any margin or padding that could cause offset
+      pointerEvents: 'none',
       // Set position to fixed to avoid any offset from parent containers
       position: 'fixed',
       // Top and left are controlled by the library, we need to ensure no additional offset
@@ -39,6 +40,8 @@ const ProspectCard: React.FC<ProspectCardProps> = ({ prospect, index }) => {
       transformOrigin: 'top left',
       // Remove any transition that could make the card lag behind cursor
       transition: 'none',
+      // Allow click-through for a smoother experience
+      pointerEvents: 'none',
       // Ensure width matches original width to prevent resizing during drag
       width: draggableStyle?.width || 'auto',
       cursor: 'grabbing',
