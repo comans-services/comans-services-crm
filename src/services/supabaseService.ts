@@ -79,41 +79,76 @@ export interface ProspectWithEngagement extends ProspectProfile {
 }
 
 // Helper function to extract action items from document
-export function extractActionItemsFromDocument(documentText: string): ActionItem[] {
-  // This is a mock implementation that simulates AI extraction
-  const currentDate = new Date();
-  const twoWeeksFromNow = new Date(currentDate);
-  twoWeeksFromNow.setDate(currentDate.getDate() + 14);
-  
-  return [
-    {
-      id: `ai-${Date.now()}-1`,
-      title: 'Follow up on pricing discussion',
-      description: 'Discuss the updated pricing structure based on the client\'s requirements',
-      priority: 'high',
-      dueDate: new Date(currentDate.setDate(currentDate.getDate() + 2)).toISOString(),
-      createdAt: new Date().toISOString(),
-      completed: false
-    },
-    {
-      id: `ai-${Date.now()}-2`,
-      title: 'Send product specifications',
-      description: 'Share detailed specifications for the enterprise plan',
-      priority: 'medium',
-      dueDate: new Date(currentDate.setDate(currentDate.getDate() + 5)).toISOString(),
-      createdAt: new Date().toISOString(),
-      completed: false
-    },
-    {
-      id: `ai-${Date.now()}-3`,
-      title: 'Schedule technical demo',
-      description: 'Arrange a technical demonstration with the IT department',
-      priority: 'low',
-      dueDate: twoWeeksFromNow.toISOString(),
-      createdAt: new Date().toISOString(),
-      completed: false
-    }
-  ];
+export function extractActionItemsFromDocument(fileName: string): Promise<ActionItem[]> {
+  return new Promise((resolve) => {
+    // Simulate API call delay
+    setTimeout(() => {
+      // Generate 2-4 random action items
+      const numberOfItems = Math.floor(Math.random() * 3) + 2;
+      const actionItems: ActionItem[] = [];
+      
+      const priorities = ['low', 'medium', 'high'] as const;
+      
+      // Sample action item titles based on document type
+      const fileExtension = fileName.split('.').pop()?.toLowerCase();
+      const actionTitles = {
+        pdf: [
+          'Review product specifications',
+          'Schedule follow-up call',
+          'Prepare proposal',
+          'Send case studies',
+          'Discuss budget constraints'
+        ],
+        docx: [
+          'Update contract terms',
+          'Finalize pricing structure',
+          'Address legal concerns',
+          'Share testimonials',
+          'Present ROI analysis'
+        ],
+        xlsx: [
+          'Analyze financial projections',
+          'Compare pricing options',
+          'Review purchase history',
+          'Update forecast model',
+          'Discuss volume discounts'
+        ],
+        default: [
+          'Schedule next meeting',
+          'Send additional information',
+          'Follow up on questions',
+          'Prepare presentation',
+          'Request stakeholder meeting'
+        ]
+      };
+      
+      const titles = actionTitles[fileExtension as keyof typeof actionTitles] || actionTitles.default;
+      
+      // Generate random action items
+      for (let i = 0; i < numberOfItems; i++) {
+        const randomTitleIndex = Math.floor(Math.random() * titles.length);
+        const daysToAdd = Math.floor(Math.random() * 14) + 1;
+        const today = new Date();
+        const dueDate = new Date(today.setDate(today.getDate() + daysToAdd));
+        
+        actionItems.push({
+          id: crypto.randomUUID(),
+          title: titles[randomTitleIndex],
+          description: `AI extracted task from ${fileName}. This is a simulated action item that would be created by analyzing the content of the uploaded document.`,
+          dueDate: dueDate.toISOString(),
+          priority: priorities[Math.floor(Math.random() * priorities.length)],
+          completed: false,
+          status: 'todo',
+          createdAt: new Date().toISOString()
+        });
+        
+        // Remove used title to avoid duplicates
+        titles.splice(randomTitleIndex, 1);
+      }
+      
+      resolve(actionItems);
+    }, 1500); // 1.5 second delay to simulate processing
+  });
 }
 
 /**
@@ -227,7 +262,7 @@ export const getProspectById = async (id: string): Promise<ProspectWithEngagemen
       .select('*')
       .eq('id', id)
       .single();
-
+    
     if (profileError) {
       console.error('Error fetching prospect profile:', profileError);
       throw new Error(profileError.message);
