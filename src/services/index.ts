@@ -5,4 +5,5 @@ export * from './prospectService';
 export * from './communicationService';
 export * from './teamService';
 export * from './activityService';
+export * from './clientService';
 export * from './base/supabaseBase';

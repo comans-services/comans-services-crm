@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
@@ -7,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
-import { createProspect } from '@/services/supabaseService';
+import { createNewClient } from '@/services/clientService';
 
 const ClientForm = () => {
   const navigate = useNavigate();
@@ -37,25 +36,17 @@ const ClientForm = () => {
     setIsSubmitting(true);
 
     try {
-      const newClient = await createProspect({
-        first_name: formData.firstName,
-        last_name: formData.lastName,
-        email: formData.email,
-        company: formData.company,
-        phone: formData.phone
-      });
+      const newClient = await createNewClient(formData);
 
-      toast.success(`Client ${formData.firstName} ${formData.lastName} created successfully`);
-      
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['prospects'] });
       queryClient.invalidateQueries({ queryKey: ['companies'] });
       
       // Redirect to client detail page
       navigate(`/clients/${newClient.id}`);
-    } catch (error: any) {
-      console.error('Error creating client:', error);
-      toast.error(`Error creating client: ${error.message}`);
+    } catch (error) {
+      // Error is already handled in createNewClient
+      console.error('Error in form submission:', error);
     } finally {
       setIsSubmitting(false);
     }
