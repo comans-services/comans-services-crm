@@ -13,7 +13,7 @@ export const setupRealTimeSubscription = (
   const channel = supabase
     .channel(`table-changes:${table}`)
     .on(
-      'system',
+      'postgres_changes', // Fix: Changed from 'system' to 'postgres_changes'
       {
         event: event,
         schema: 'public',

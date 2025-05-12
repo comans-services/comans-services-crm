@@ -63,7 +63,6 @@ const ProspectCard: React.FC<ProspectCardProps> = ({ prospect, index }) => {
   };
 
   const statusColorClass = getStatusColorClass(prospect.statusColor);
-  const textColorClass = statusColorClass.replace('bg-', 'text-');
 
   return (
     <Draggable 
