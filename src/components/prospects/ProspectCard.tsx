@@ -79,21 +79,21 @@ const ProspectCard: React.FC<ProspectCardProps> = ({ prospect, index }) => {
             snapshot.isDragging,
             provided.draggableProps.style
           )}
-          className={`mb-2 p-3 rounded-md border transition-all ${
+          className={`mb-3 p-4 rounded-md border transition-all ${
             snapshot.isDragging 
               ? 'border-blue-500'
               : 'border-white/10'
           }`}
         >
           <div className="cursor-move">
-            <div className="text-sm font-medium">
+            <div className="text-sm font-medium px-1">
               {prospect.first_name} {prospect.last_name}
             </div>
-            <div className="text-xs text-white/60 mt-1">
+            <div className="text-xs text-white/60 mt-2 px-1">
               {prospect.company}
             </div>
-            <div className="mt-2 flex justify-between items-center text-xs">
-              <div className="bg-white/10 rounded px-2 py-0.5">
+            <div className="mt-3 flex justify-between items-center text-xs">
+              <div className="bg-white/10 rounded px-3 py-1">
                 {prospect.daysSinceLastContact !== null 
                   ? `${prospect.daysSinceLastContact} days ago` 
                   : 'New lead'}
