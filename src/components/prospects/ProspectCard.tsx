@@ -48,7 +48,6 @@ const ProspectCard: React.FC<ProspectCardProps> = ({ prospect, index }) => {
       width: draggableStyle?.width || 'auto',
       // Use grabbing cursor 
       cursor: 'grabbing',
-      padding: 12, // Ensure consistent padding when dragging
     } : {}),
     
     // Apply draggable styles provided by the library
