@@ -13,7 +13,7 @@ const ProspectCard: React.FC<ProspectCardProps> = ({ prospect, index }) => {
   const getItemStyle = (isDragging: boolean, draggableStyle: any) => ({
     // Base styles
     userSelect: 'none' as const,
-    padding: 12, // Changed from 0 to 12px
+    padding: 6, // Changed from 0 to 12px
     margin: '0 0 8px 0',
     
     // Visual feedback when dragging
