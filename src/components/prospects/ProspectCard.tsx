@@ -10,23 +10,27 @@ interface ProspectCardProps {
 
 const ProspectCard: React.FC<ProspectCardProps> = ({ prospect, index }) => {
   // Perfected cursor alignment during drag operations
-  const getItemStyle = (isDragging: boolean, draggableStyle: any) => ({
-    // Base styles
+  const getItemStyle = (
+  isDragging: boolean,
+  draggableStyle: React.CSSProperties | undefined
+): React.CSSProperties => ({
     userSelect: 'none' as const,
     padding: 6, // Consistent 12px padding
     margin: '0 0 8px 0',
     
     // Visual feedback when dragging
-    background: isDragging ? 'rgba(59, 130, 246, 0.6)' : 'rgba(255, 255, 255, 0.05)',
-    borderColor: isDragging ? 'rgb(59, 130, 246)' : 'rgba(255, 255, 255, 0.1)',
-    boxShadow: isDragging ? '0 10px 15px rgba(0, 0, 0, 0.4)' : 'none',
+      background: isDragging
+    ? 'rgba(59 130 246 / .6)'
+    : 'rgba(255 255 255 / .05)',
+  borderColor: isDragging
+    ? 'rgb(59 130 246)'
+    : 'rgba(255 255 255 / .1)',
+  boxShadow: isDragging
+    ? '0 10px 15px rgba(0 0 0 / .4)'
+    : 'none',
     
     // Critical alignment fixes for cursor
     ...(isDragging ? {
-      // Remove any margin or padding that could cause offset
-      pointerEvents: 'none',
-      // Set position to fixed to avoid any offset from parent containers
-      position: 'fixed',
       // Top and left are controlled by the library, we need to ensure no additional offset
       zIndex: 9999,
       // Force full opacity and visibility
