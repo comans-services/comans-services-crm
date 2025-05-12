@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
-const CommunicationHistory = () => {
+const StatusOfProspect = () => {
   const queryClient = useQueryClient();
   const { data: prospects = [], isLoading, error, refetch } = useQuery({
     queryKey: ['prospects'],
@@ -181,4 +181,4 @@ const CommunicationHistory = () => {
   );
 };
 
-export default CommunicationHistory;
+export default StatusOfProspect;

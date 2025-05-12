@@ -38,7 +38,6 @@ const Sidebar = ({ isExpanded, onToggle }: SidebarProps) => {
     { to: "/todaystasks", label: "Today's Tasks", icon: <Calendar /> },
     { to: "/communications", label: "Status of Prospects", icon: <MessageSquare /> },
     { to: "/email-communications", label: "Email Communications", icon: <Mail /> },
-    { to: "/newsletters", label: "Newsletters", icon: <Mail /> },
     { to: "/team", label: "Team", icon: <UsersRound /> },
     { to: "/settings", label: "Settings", icon: <Settings /> },
   ];

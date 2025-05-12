@@ -10,14 +10,11 @@ import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
 import ClientDetail from "./pages/ClientDetail";
 import ClientForm from "./pages/ClientForm";
-import Newsletters from "./pages/Newsletters";
-import NewsletterForm from "./pages/NewsletterForm";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
-import KanbanBoard from "./pages/KanbanBoard";
 import AuthGuard from "./components/auth/AuthGuard";
 import TeamManagement from "./pages/TeamManagement";
-import CommunicationHistory from "./pages/CommunicationHistory";
+import StatusOfProspect from "./pages/StatusOfProspect";
 import TodaysTasks from "./pages/TodaysTasks";
 import EmailCommunicationHistory from "./pages/EmailCommunicationHistory";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -56,12 +53,6 @@ const App = () => (
             </AuthGuard>
           } />
           
-          <Route path="/clients/kanban" element={
-            <AuthGuard>
-              <Layout><KanbanBoard /></Layout>
-            </AuthGuard>
-          } />
-          
           <Route path="/clients/:id" element={
             <AuthGuard>
               <Layout><ClientDetail /></Layout>
@@ -71,18 +62,6 @@ const App = () => (
           <Route path="/clients/new" element={
             <AuthGuard>
               <Layout><ClientForm /></Layout>
-            </AuthGuard>
-          } />
-          
-          <Route path="/newsletters" element={
-            <AuthGuard>
-              <Layout><Newsletters /></Layout>
-            </AuthGuard>
-          } />
-          
-          <Route path="/newsletters/new" element={
-            <AuthGuard>
-              <Layout><NewsletterForm /></Layout>
             </AuthGuard>
           } />
           
@@ -101,7 +80,7 @@ const App = () => (
           <Route path="/communications" element={
             <AuthGuard>
               <Layout>
-                <CommunicationHistory />
+                <StatusOfProspect />
               </Layout>
             </AuthGuard>
           } />
