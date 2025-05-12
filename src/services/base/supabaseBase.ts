@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js@';
+import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 /**
  * Sets up real-time subscriptions for a table
@@ -13,7 +13,7 @@ export const setupRealTimeSubscription = (
   const channel = supabase
     .channel(`table-changes:${table}`)
     .on(
-      'postgres_changes',
+      'system',
       {
         event: event,
         schema: 'public',
