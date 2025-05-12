@@ -1,8 +1,10 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Settings, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
+import { signOut } from '@/services/authService';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,16 +16,15 @@ import {
 
 const UserMenu = () => {
   const navigate = useNavigate();
-  // Get user info from localStorage (in a real app, use a proper auth context)
-  const [userEmail, setUserEmail] = useState(() => {
-    const user = localStorage.getItem('user');
-    return user ? JSON.parse(user).email : 'user@example.com';
-  });
-
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    toast.success('Logged out successfully');
-    navigate('/login');
+  const { user } = useAuth();
+  
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast.success('Logged out successfully');
+    } catch (error: any) {
+      toast.error(`Error logging out: ${error.message}`);
+    }
   };
 
   return (
@@ -34,7 +35,7 @@ const UserMenu = () => {
             <div className="w-8 h-8 rounded-full bg-crm-accent flex items-center justify-center">
               <User size={18} className="text-white" />
             </div>
-            <span className="hidden md:block text-sm font-medium">{userEmail}</span>
+            <span className="hidden md:block text-sm font-medium">{user?.email || 'User'}</span>
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56 bg-black/80 backdrop-blur-lg border-white/10 text-white">

@@ -1,18 +1,22 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { LogOut } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { signOut } from '@/services/authService';
 
 const Settings = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  
   const [userData, setUserData] = useState({
-    username: "John Doe",
-    email: "john.doe@example.com",
-    phone: "(123) 456-7890"
+    username: user?.user_metadata?.username || user?.email?.split('@')[0] || "User",
+    email: user?.email || "",
+    phone: user?.phone || ""
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -29,11 +33,12 @@ const Settings = () => {
     toast.success("Settings saved successfully");
   };
   
-  const handleLogout = () => {
-    // In a real app, handle logout logic
-    localStorage.removeItem('user');
-    toast.success('Logged out successfully');
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } catch (error: any) {
+      toast.error(`Error logging out: ${error.message}`);
+    }
   };
   
   return (
@@ -68,6 +73,7 @@ const Settings = () => {
               value={userData.email}
               onChange={handleChange}
               className="mt-1 w-full px-4 py-3 bg-white/5 border border-white/20 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-crm-accent/50"
+              disabled={!!user?.email} // Disable if email is from auth
             />
           </div>
           

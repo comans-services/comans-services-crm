@@ -20,6 +20,7 @@ import TeamManagement from "./pages/TeamManagement";
 import CommunicationHistory from "./pages/CommunicationHistory";
 import TodaysTasks from "./pages/TodaysTasks";
 import EmailCommunicationHistory from "./pages/EmailCommunicationHistory";
+import { AuthProvider } from "./contexts/AuthContext";
 
 // Configure React Query for better real-time data handling
 const queryClient = new QueryClient({
@@ -36,93 +37,95 @@ const queryClient = new QueryClient({
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        
-        <Route path="/" element={
-          <AuthGuard>
-            <Layout><Dashboard /></Layout>
-          </AuthGuard>
-        } />
-        
-        <Route path="/clients" element={
-          <AuthGuard>
-            <Layout><Clients /></Layout>
-          </AuthGuard>
-        } />
-        
-        <Route path="/clients/kanban" element={
-          <AuthGuard>
-            <Layout><KanbanBoard /></Layout>
-          </AuthGuard>
-        } />
-        
-        <Route path="/clients/:id" element={
-          <AuthGuard>
-            <Layout><ClientDetail /></Layout>
-          </AuthGuard>
-        } />
-        
-        <Route path="/clients/new" element={
-          <AuthGuard>
-            <Layout><ClientForm /></Layout>
-          </AuthGuard>
-        } />
-        
-        <Route path="/newsletters" element={
-          <AuthGuard>
-            <Layout><Newsletters /></Layout>
-          </AuthGuard>
-        } />
-        
-        <Route path="/newsletters/new" element={
-          <AuthGuard>
-            <Layout><NewsletterForm /></Layout>
-          </AuthGuard>
-        } />
-        
-        <Route path="/team" element={
-          <AuthGuard>
-            <Layout><TeamManagement /></Layout>
-          </AuthGuard>
-        } />
-        
-        <Route path="/settings" element={
-          <AuthGuard>
-            <Layout><Settings /></Layout>
-          </AuthGuard>
-        } />
-        
-        <Route path="/communications" element={
-          <AuthGuard>
-            <Layout>
-              <CommunicationHistory />
-            </Layout>
-          </AuthGuard>
-        } />
-        
-        <Route path="/email-communications" element={
-          <AuthGuard>
-            <Layout>
-              <EmailCommunicationHistory />
-            </Layout>
-          </AuthGuard>
-        } />
-        
-        <Route path="/todaystasks" element={
-          <AuthGuard>
-            <Layout>
-              <TodaysTasks />
-            </Layout>
-          </AuthGuard>
-        } />
-        
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          
+          <Route path="/" element={
+            <AuthGuard>
+              <Layout><Dashboard /></Layout>
+            </AuthGuard>
+          } />
+          
+          <Route path="/clients" element={
+            <AuthGuard>
+              <Layout><Clients /></Layout>
+            </AuthGuard>
+          } />
+          
+          <Route path="/clients/kanban" element={
+            <AuthGuard>
+              <Layout><KanbanBoard /></Layout>
+            </AuthGuard>
+          } />
+          
+          <Route path="/clients/:id" element={
+            <AuthGuard>
+              <Layout><ClientDetail /></Layout>
+            </AuthGuard>
+          } />
+          
+          <Route path="/clients/new" element={
+            <AuthGuard>
+              <Layout><ClientForm /></Layout>
+            </AuthGuard>
+          } />
+          
+          <Route path="/newsletters" element={
+            <AuthGuard>
+              <Layout><Newsletters /></Layout>
+            </AuthGuard>
+          } />
+          
+          <Route path="/newsletters/new" element={
+            <AuthGuard>
+              <Layout><NewsletterForm /></Layout>
+            </AuthGuard>
+          } />
+          
+          <Route path="/team" element={
+            <AuthGuard>
+              <Layout><TeamManagement /></Layout>
+            </AuthGuard>
+          } />
+          
+          <Route path="/settings" element={
+            <AuthGuard>
+              <Layout><Settings /></Layout>
+            </AuthGuard>
+          } />
+          
+          <Route path="/communications" element={
+            <AuthGuard>
+              <Layout>
+                <CommunicationHistory />
+              </Layout>
+            </AuthGuard>
+          } />
+          
+          <Route path="/email-communications" element={
+            <AuthGuard>
+              <Layout>
+                <EmailCommunicationHistory />
+              </Layout>
+            </AuthGuard>
+          } />
+          
+          <Route path="/todaystasks" element={
+            <AuthGuard>
+              <Layout>
+                <TodaysTasks />
+              </Layout>
+            </AuthGuard>
+          } />
+          
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 
