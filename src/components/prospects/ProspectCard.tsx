@@ -13,7 +13,7 @@ const ProspectCard: React.FC<ProspectCardProps> = ({ prospect, index }) => {
   const getItemStyle = (isDragging: boolean, draggableStyle: any) => ({
     // Base styles
     userSelect: 'none' as const,
-    padding: 0,
+    padding: 12, // Changed from 0 to 12px
     margin: '0 0 8px 0',
     
     // Visual feedback when dragging
@@ -44,6 +44,7 @@ const ProspectCard: React.FC<ProspectCardProps> = ({ prospect, index }) => {
       width: draggableStyle?.width || 'auto',
       // Use grabbing cursor 
       cursor: 'grabbing',
+      padding: 12, // Ensure consistent padding when dragging
     } : {}),
     
     // Apply draggable styles provided by the library
@@ -85,7 +86,7 @@ const ProspectCard: React.FC<ProspectCardProps> = ({ prospect, index }) => {
               : 'border-white/10'
           }`}
         >
-          <div className="cursor-move">
+          <div className="cursor-move p-3"> {/* Added p-3 for inner padding */}
             <div className="text-sm font-medium px-1">
               {prospect.first_name} {prospect.last_name}
             </div>

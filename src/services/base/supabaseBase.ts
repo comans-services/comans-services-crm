@@ -13,7 +13,7 @@ export const setupRealTimeSubscription = (
   const channel = supabase
     .channel(`table-changes:${table}`)
     .on(
-      'postgres_changes',
+      'postgres_changes' as any, // Type cast to fix TypeScript error
       {
         event: event,
         schema: 'public',
