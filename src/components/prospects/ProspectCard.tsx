@@ -28,11 +28,10 @@ const ProspectCard = forwardRef<HTMLDivElement, ProspectCardProps>(
       }
     })();
 
-    // Modify style to ensure top is 150px, left is 100px and position is not fixed
+    // Modify style to center the card on the mouse cursor during drag
     const modifiedStyle = style ? {
       ...style,
-      top: 150,
-      left: 100,
+      transform: `${style.transform} translate(-50%, -50%)`,
     } : {};
 
     return (
