@@ -28,12 +28,13 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
     return <ProspectBoardLoading />;
   }
   
-return (
-  <div className="pb-4">
-    <DragDropContext onDragEnd={handleDragEnd}>
-      <div
-        className="flex gap-4 overflow-x-auto"
-        style={{ minWidth: 'max-content' }}
+  return (
+    <div className="pb-4">
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <div 
+          className="flex gap-4 overflow-x-auto"
+          style={{ minWidth: 'max-content' }}
+        >
           {columns.map(column => (
             <StatusColumn
               key={column.id}
