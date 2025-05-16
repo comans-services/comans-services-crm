@@ -10,16 +10,18 @@ interface ProspectCardProps {
 
 const ProspectCard: React.FC<ProspectCardProps> = ({ prospect, index }) => {
   // Perfected cursor alignment during drag operations
-  const getItemStyle = (
+// BEFORE ─ getItemStyle was ~40 lines long, forcing position: fixed
+// AFTER  ─ tidy, no hacks ----------------------------------------
+
+const getItemStyle = (
   isDragging: boolean,
   draggableStyle: React.CSSProperties | undefined
 ): React.CSSProperties => ({
-    userSelect: 'none' as const,
-    padding: 6, // Consistent 12px padding
-    margin: '0 0 8px 0',
-    
-    // Visual feedback when dragging
-      background: isDragging
+  userSelect: 'none',
+  margin: '0 0 8px 0',
+
+  // Visual feedback while dragging
+  background: isDragging
     ? 'rgba(59 130 246 / .6)'
     : 'rgba(255 255 255 / .05)',
   borderColor: isDragging
@@ -28,31 +30,10 @@ const ProspectCard: React.FC<ProspectCardProps> = ({ prospect, index }) => {
   boxShadow: isDragging
     ? '0 10px 15px rgba(0 0 0 / .4)'
     : 'none',
-    
-    // Critical alignment fixes for cursor
-    ...(isDragging ? {
-      // Top and left are controlled by the library, we need to ensure no additional offset
-      zIndex: 9999,
-      // Force full opacity and visibility
-      opacity: 1,
-      visibility: 'visible',
-      // Remove any transform scale that might cause misalignment
-      transform: draggableStyle?.transform 
-        ? draggableStyle.transform.replace(/scale\([^)]+\)/g, '') 
-        : 'translate(0px, 0px)',
-      // Set transform origin to top left corner for precise positioning
-      transformOrigin: 'top left',
-      // Remove any transition that could make the card lag behind cursor
-      transition: 'none',
-      // Width from draggable style
-      width: draggableStyle?.width || 'auto',
-      // Use grabbing cursor 
-      cursor: 'grabbing',
-    } : {}),
-    
-    // Apply draggable styles provided by the library
-    ...draggableStyle,
-  });
+
+  // Always spread LAST so the library can position the item
+  ...draggableStyle,
+});
 
   // Determine the status color class for Tailwind
   const getStatusColorClass = (color: string) => {
