@@ -33,7 +33,6 @@ const ProspectCard = forwardRef<HTMLDivElement, ProspectCardProps>(
       ...style,
       top: 150,
       left: 100,
-      position: style.position === 'fixed' ? 'absolute' : style.position
     } : {};
 
     return (
