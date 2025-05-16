@@ -1,6 +1,7 @@
+
 /* src/components/prospects/ProspectStatusBoard.tsx */
 import React, { useEffect, useState } from 'react';
-import { DragDropContext } from '@hello-pangea/dnd';
+import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 
 import { ProspectWithEngagement } from '@/services/supabaseService';
 import StatusColumn from './StatusColumn';
@@ -43,23 +44,29 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <div className="overflow-x-auto pb-4">
-        {/* we keep min-width so columns never squash on narrow screens */}
-        <section className="flex gap-4" style={{ minWidth: 'max-content' }}>
-          {columns.map((col) => (
-            <StatusColumn
-              key={col.id}
-              id={col.id}
-              title={col.title}
-              prospects={col.prospects}
-              onCreateLead={col.id === 'new-lead' ? onCreateLead : undefined}
-            />
-          ))}
-        </section>
-      </div>
+      <Droppable droppableId="board" direction="horizontal" type="COLUMN">
+        {(boardProvided) => (
+          <div
+            ref={boardProvided.innerRef}
+            {...boardProvided.droppableProps}
+            className="flex gap-4 overflow-x-auto pb-4"
+            style={{ minWidth: 'max-content' }}
+          >
+            {columns.map((col) => (
+              <StatusColumn
+                key={col.id}
+                id={col.id}
+                title={col.title}
+                prospects={col.prospects}
+                onCreateLead={col.id === 'new-lead' ? onCreateLead : undefined}
+              />
+            ))}
+            {boardProvided.placeholder}
+          </div>
+        )}
+      </Droppable>
     </DragDropContext>
   );
 };
 
 export default ProspectStatusBoard;
-

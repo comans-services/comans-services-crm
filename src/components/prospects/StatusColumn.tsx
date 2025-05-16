@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Plus } from 'lucide-react';
 import { Droppable, Draggable } from '@hello-pangea/dnd';
@@ -50,7 +51,7 @@ const StatusColumn: React.FC<StatusColumnProps> = ({
             </div>
 
             {/* Card list */}
-            <div className="flex-1 overflow-y-auto p-2">
+            <div className="flex-1 overflow-y-auto p-2 space-y-3">
               {prospects.map((prospect, index) => (
                 <Draggable
                   key={prospect.dragId || prospect.id}

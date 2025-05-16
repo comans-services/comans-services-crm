@@ -1,3 +1,4 @@
+
 import React, { forwardRef } from 'react';
 import { ProspectWithEngagement } from '@/services/types/serviceTypes';
 
@@ -33,7 +34,7 @@ const ProspectCard = forwardRef<HTMLDivElement, ProspectCardProps>(
         {...draggableProps}
         {...dragHandleProps}
         style={style}
-        className="mb-3 rounded-md border border-white/10 bg-white/5 transition-all"
+        className="rounded-md border border-white/10 bg-white/5 transition-all"
       >
         <div className="p-3">
           <div className="px-2 text-sm font-medium">
@@ -57,4 +58,3 @@ const ProspectCard = forwardRef<HTMLDivElement, ProspectCardProps>(
 );
 
 export default ProspectCard;
-
