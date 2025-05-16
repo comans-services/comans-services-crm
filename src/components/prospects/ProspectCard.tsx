@@ -28,12 +28,20 @@ const ProspectCard = forwardRef<HTMLDivElement, ProspectCardProps>(
       }
     })();
 
+    // Modify style to ensure top and left are 0px and position is not fixed
+    const modifiedStyle = style ? {
+      ...style,
+      top: 0,
+      left: 0,
+      position: style.position === 'fixed' ? 'absolute' : style.position
+    } : {};
+
     return (
       <div
         ref={ref}
         {...draggableProps}
         {...dragHandleProps}
-        style={style}
+        style={modifiedStyle}
         className="rounded-md border border-white/10 bg-white/5 transition-all"
       >
         <div className="p-3">
