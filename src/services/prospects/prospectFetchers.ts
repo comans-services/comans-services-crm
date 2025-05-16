@@ -1,104 +1,63 @@
-
 import { supabase } from '@/integrations/supabase/client';
-import { ProspectWithEngagement } from '../types/serviceTypes';
-import { getStatusColor, getRecommendedAction, extractDomain, getDomainCompany } from '@/utils/clientUtils';
+import { ProspectWithEngagement } from '@/services/types/serviceTypes';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
- * Fetches all prospects with their engagement data from Supabase
+ * Fetches all prospects from the database
  */
 export const getProspects = async (): Promise<ProspectWithEngagement[]> => {
-  try {
-    // First query the prospect profiles
-    const { data: profiles, error: profilesError } = await supabase
-      .from('prospect_profile')
-      .select('*');
-    
-    if (profilesError) {
-      console.error('Error fetching prospect profiles:', profilesError);
-      throw new Error(profilesError.message);
-    }
+  const { data, error } = await supabase
+    .from('prospect_profile')
+    .select(`
+      *,
+      engagement:prospect_engagement(*),
+      communications:sales_tracking(*)
+    `)
+    .is('is_deleted', null)
+    .or('is_deleted.eq.false');
 
-    if (!profiles || profiles.length === 0) {
-      return [];
-    }
-
-    // Get all prospect IDs for engagement query
-    const prospectIds = profiles.map(profile => profile.id);
-
-    // Query engagement data for all prospects
-    const { data: engagements, error: engagementsError } = await supabase
-      .from('prospect_engagement')
-      .select('*')
-      .in('prospect_id', prospectIds);
-    
-    if (engagementsError) {
-      console.error('Error fetching prospect engagements:', engagementsError);
-      throw new Error(engagementsError.message);
-    }
-
-    // Query communications data for all prospects
-    const { data: communications, error: communicationsError } = await supabase
-      .from('sales_tracking')
-      .select('*')
-      .in('prospect_id', prospectIds);
-    
-    if (communicationsError) {
-      console.error('Error fetching sales tracking data:', communicationsError);
-      throw new Error(communicationsError.message);
-    }
-
-    // Map prospect profiles with engagement and communication data
-    const prospects: ProspectWithEngagement[] = profiles.map(profile => {
-      // Find engagement data for this prospect
-      const engagement = engagements?.find(e => e.prospect_id === profile.id) || {
-        id: '',
-        prospect_id: profile.id,
-        last_contact_date: null,
-        created_at: profile.created_at,
-        updated_at: profile.updated_at
-      };
-
-      // Find communications for this prospect
-      const prospectCommunications = (communications || [])
-        .filter(c => c.prospect_id === profile.id)
-        .sort((a, b) => new Date(b.date_of_communication).getTime() - new Date(a.date_of_communication).getTime())
-        .map(comm => ({
-          ...comm,
-          prospect_first_name: profile.first_name,
-          prospect_last_name: profile.last_name
-        }));
-
-      // Calculate days since last contact
-      const daysSinceLastContact = engagement.last_contact_date
-        ? Math.floor((new Date().getTime() - new Date(engagement.last_contact_date).getTime()) / (1000 * 60 * 60 * 24))
-        : null;
-
-      // Determine status color and recommended action
-      const statusColor = getStatusColor(daysSinceLastContact);
-      const recommendedAction = getRecommendedAction(daysSinceLastContact);
-
-      // Get company from email domain
-      const domain = extractDomain(profile.email);
-      const company = profile.company || getDomainCompany(domain);
-
-      // Add dragId for drag-and-drop functionality
-      return {
-        ...profile,
-        engagement,
-        communications: prospectCommunications,
-        daysSinceLastContact,
-        statusColor,
-        recommendedAction,
-        company,
-        dragId: `drag-${profile.id}`
-      };
-    });
-
-    return prospects;
-  } catch (error) {
-    console.error('Error in getProspects:', error);
-    throw error;
+  if (error) {
+    console.error('Error fetching prospects:', error);
+    throw new Error(`Failed to fetch prospects: ${error.message}`);
   }
+
+  // Process the results into the expected format
+  return (data || []).map(prospect => {
+    // Extract the days since last contact if present
+    const lastContactDate = prospect.engagement?.last_contact_date;
+    const daysSinceLastContact = lastContactDate 
+      ? Math.floor((Date.now() - new Date(lastContactDate).getTime()) / (1000 * 60 * 60 * 24))
+      : null;
+    
+    // Determine status color based on days since last contact
+    let statusColor = 'gray';
+    if (daysSinceLastContact !== null) {
+      if (daysSinceLastContact <= 7) statusColor = 'green';
+      else if (daysSinceLastContact <= 14) statusColor = 'yellow';
+      else if (daysSinceLastContact <= 30) statusColor = 'orange';
+      else statusColor = 'red';
+    }
+    
+    // Generate a recommended action based on status
+    let recommendedAction = 'Schedule initial contact';
+    if (daysSinceLastContact !== null) {
+      if (daysSinceLastContact <= 7) recommendedAction = 'Follow up on previous conversation';
+      else if (daysSinceLastContact <= 14) recommendedAction = 'Check in with client';
+      else if (daysSinceLastContact <= 30) recommendedAction = 'Send re-engagement email';
+      else recommendedAction = 'Urgent: Contact client immediately';
+    }
+
+    return {
+      ...prospect,
+      company: prospect.company || 'Unknown',
+      engagement: prospect.engagement || { last_contact_date: null, prospect_id: prospect.id },
+      communications: prospect.communications || [],
+      daysSinceLastContact,
+      statusColor,
+      recommendedAction,
+      dragId: uuidv4() // Add unique ID for drag-and-drop functionality
+    };
+  });
 };
 
 /**
