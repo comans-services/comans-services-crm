@@ -28,11 +28,11 @@ const ProspectCard = forwardRef<HTMLDivElement, ProspectCardProps>(
       }
     })();
 
-    // Modify style to ensure top and left are 0px and position is not fixed
+    // Modify style to ensure top is 150px, left is 100px and position is not fixed
     const modifiedStyle = style ? {
       ...style,
-      top: 0,
-      left: 0,
+      top: 150,
+      left: 100,
       position: style.position === 'fixed' ? 'absolute' : style.position
     } : {};
 
