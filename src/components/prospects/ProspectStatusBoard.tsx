@@ -1,11 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { DragDropContext } from '@hello-pangea/dnd';
 import { ProspectWithEngagement } from '@/services/supabaseService';
 import StatusColumn from './StatusColumn';
 import ProspectBoardLoading from './ProspectBoardLoading';
 import { distributeProspects, StatusColumn as StatusColumnType } from './utils/columnUtils';
-import { useDragDrop } from './hooks/useDragDrop';
 
 interface ProspectStatusBoardProps {
   prospects: ProspectWithEngagement[];
@@ -15,7 +13,6 @@ interface ProspectStatusBoardProps {
 
 const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, isLoading, onCreateLead }) => {
   const [columns, setColumns] = useState<StatusColumnType[]>([]);
-  const { handleDragEnd } = useDragDrop(columns, setColumns);
   
   // Update columns when prospects change
   useEffect(() => {
@@ -29,24 +26,21 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
   }
   
   return (
-    // Move the overflow-x-auto to the outer container, OUTSIDE the DragDropContext
     <div className="pb-4 overflow-x-auto">
-      <DragDropContext onDragEnd={handleDragEnd}>
-        <div 
-          className="flex gap-4"
-          style={{ minWidth: 'max-content' }}
-        >
-          {columns.map(column => (
-            <StatusColumn
-              key={column.id}
-              id={column.id}
-              title={column.title}
-              prospects={column.prospects}
-              onCreateLead={column.id === 'new-lead' ? onCreateLead : undefined}
-            />
-          ))}
-        </div>
-      </DragDropContext>
+      <div 
+        className="flex gap-4"
+        style={{ minWidth: 'max-content' }}
+      >
+        {columns.map(column => (
+          <StatusColumn
+            key={column.id}
+            id={column.id}
+            title={column.title}
+            prospects={column.prospects}
+            onCreateLead={column.id === 'new-lead' ? onCreateLead : undefined}
+          />
+        ))}
+      </div>
     </div>
   );
 };
