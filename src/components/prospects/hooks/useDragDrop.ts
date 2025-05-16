@@ -4,7 +4,6 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { StatusColumn } from '../utils/columnUtils';
 import { DropResult } from '@atlaskit/pragmatic-drag-and-drop-react-beautiful-dnd-migration';
-import { DragEndPayload } from '@atlaskit/pragmatic-drag-and-drop';
 
 export const useDragDrop = (initialColumns: StatusColumn[], setColumns: React.Dispatch<React.SetStateAction<StatusColumn[]>>) => {
   // This handles drop results using similar structure to beautiful-dnd
