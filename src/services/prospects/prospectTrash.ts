@@ -11,7 +11,10 @@ export const moveClientToTrash = async (clientId: string): Promise<void> => {
     // Update the prospect_profile table to mark the client as deleted
     const { error } = await supabase
       .from('prospect_profile')
-      .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+      .update({
+        is_deleted: true,
+        deleted_at: new Date().toISOString()
+      })
       .eq('id', clientId);
 
     if (error) {
@@ -32,7 +35,10 @@ export const restoreClientFromTrash = async (clientId: string): Promise<void> =>
     // Update the prospect_profile table to unmark the client as deleted
     const { error } = await supabase
       .from('prospect_profile')
-      .update({ is_deleted: false, deleted_at: null })
+      .update({
+        is_deleted: false,
+        deleted_at: null
+      })
       .eq('id', clientId);
 
     if (error) {

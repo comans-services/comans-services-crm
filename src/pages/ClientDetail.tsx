@@ -3,14 +3,16 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit, Mail, Phone, Building, User, FileText, Upload, Trash2 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getProspectById, setupRealTimeSubscription, ActionItem, moveClientToTrash } from '@/services/supabaseService';
+import { getProspectById, moveClientToTrash } from '@/services';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 import DocumentUploader from '@/components/clients/DocumentUploader';
 import ActionItemsList from '@/components/clients/ActionItemsList';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { setupRealTimeSubscription } from '@/services';
+import { ActionItem } from '@/services/types/serviceTypes';
 
 const ClientDetail = () => {
   const { id } = useParams<{ id: string }>();

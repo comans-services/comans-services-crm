@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { ProspectWithEngagement } from '@/services/types/serviceTypes';
 import { v4 as uuidv4 } from 'uuid';
@@ -24,7 +25,9 @@ export const getProspects = async (): Promise<ProspectWithEngagement[]> => {
   // Process the results into the expected format
   return (data || []).map(prospect => {
     // Extract the days since last contact if present
-    const lastContactDate = prospect.engagement?.last_contact_date;
+    const engagementData = Array.isArray(prospect.engagement) ? prospect.engagement[0] : prospect.engagement;
+    const lastContactDate = engagementData?.last_contact_date;
+    
     const daysSinceLastContact = lastContactDate 
       ? Math.floor((Date.now() - new Date(lastContactDate).getTime()) / (1000 * 60 * 60 * 24))
       : null;
@@ -47,10 +50,15 @@ export const getProspects = async (): Promise<ProspectWithEngagement[]> => {
       else recommendedAction = 'Urgent: Contact client immediately';
     }
 
+    // Ensure engagement is a single object, not an array
+    const engagement = Array.isArray(prospect.engagement) 
+      ? (prospect.engagement[0] || { last_contact_date: null, prospect_id: prospect.id })
+      : (prospect.engagement || { last_contact_date: null, prospect_id: prospect.id });
+
     return {
       ...prospect,
       company: prospect.company || 'Unknown',
-      engagement: prospect.engagement || { last_contact_date: null, prospect_id: prospect.id },
+      engagement,
       communications: prospect.communications || [],
       daysSinceLastContact,
       statusColor,
@@ -58,6 +66,42 @@ export const getProspects = async (): Promise<ProspectWithEngagement[]> => {
       dragId: uuidv4() // Add unique ID for drag-and-drop functionality
     };
   });
+};
+
+/**
+ * Utility functions for determining status color and recommended action
+ */
+const getStatusColor = (daysSinceLastContact: number | null): string => {
+  if (daysSinceLastContact === null) return 'gray';
+  if (daysSinceLastContact <= 7) return 'green';
+  if (daysSinceLastContact <= 14) return 'yellow';
+  if (daysSinceLastContact <= 30) return 'orange';
+  return 'red';
+};
+
+const getRecommendedAction = (daysSinceLastContact: number | null): string => {
+  if (daysSinceLastContact === null) return 'Schedule initial contact';
+  if (daysSinceLastContact <= 7) return 'Follow up on previous conversation';
+  if (daysSinceLastContact <= 14) return 'Check in with client';
+  if (daysSinceLastContact <= 30) return 'Send re-engagement email';
+  return 'Urgent: Contact client immediately';
+};
+
+/**
+ * Extract domain from email
+ */
+const extractDomain = (email: string): string => {
+  const parts = email.split('@');
+  return parts.length > 1 ? parts[1] : '';
+};
+
+/**
+ * Get company name from domain
+ */
+const getDomainCompany = (domain: string): string => {
+  if (!domain) return 'Unknown';
+  const parts = domain.split('.');
+  return parts.length > 0 ? parts[0].charAt(0).toUpperCase() + parts[0].slice(1) : 'Unknown';
 };
 
 /**
