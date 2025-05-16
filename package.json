@@ -11,6 +11,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@atlaskit/pragmatic-drag-and-drop": "^1.6.1",
+    "@atlaskit/pragmatic-drag-and-drop-react-beautiful-dnd-migration": "^2.0.3",
     "@hello-pangea/dnd": "^16.5.0",
     "@hookform/resolvers": "^3.9.0",
     "@radix-ui/react-accordion": "^1.2.0",
