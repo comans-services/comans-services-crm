@@ -29,10 +29,11 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
   }
   
   return (
-    <div className="pb-4">
+    // Move the overflow-x-auto to the outer container, OUTSIDE the DragDropContext
+    <div className="pb-4 overflow-x-auto">
       <DragDropContext onDragEnd={handleDragEnd}>
         <div 
-          className="flex gap-4 overflow-x-auto"
+          className="flex gap-4"
           style={{ minWidth: 'max-content' }}
         >
           {columns.map(column => (

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import { ProspectWithEngagement } from '@/services/types/serviceTypes';
@@ -9,31 +8,28 @@ interface ProspectCardProps {
 }
 
 const ProspectCard: React.FC<ProspectCardProps> = ({ prospect, index }) => {
-  // Perfected cursor alignment during drag operations
-// BEFORE ─ getItemStyle was ~40 lines long, forcing position: fixed
-// AFTER  ─ tidy, no hacks ----------------------------------------
+  // Clean implementation for styling during drag operations
+  const getItemStyle = (
+    isDragging: boolean,
+    draggableStyle: React.CSSProperties | undefined
+  ): React.CSSProperties => ({
+    userSelect: 'none',
+    margin: '0 0 8px 0',
 
-const getItemStyle = (
-  isDragging: boolean,
-  draggableStyle: React.CSSProperties | undefined
-): React.CSSProperties => ({
-  userSelect: 'none',
-  margin: '0 0 8px 0',
+    // Visual feedback while dragging
+    background: isDragging
+      ? 'rgba(59 130 246 / .6)'
+      : 'rgba(255 255 255 / .05)',
+    borderColor: isDragging
+      ? 'rgb(59 130 246)'
+      : 'rgba(255 255 255 / .1)',
+    boxShadow: isDragging
+      ? '0 10px 15px rgba(0 0 0 / .4)'
+      : 'none',
 
-  // Visual feedback while dragging
-  background: isDragging
-    ? 'rgba(59 130 246 / .6)'
-    : 'rgba(255 255 255 / .05)',
-  borderColor: isDragging
-    ? 'rgb(59 130 246)'
-    : 'rgba(255 255 255 / .1)',
-  boxShadow: isDragging
-    ? '0 10px 15px rgba(0 0 0 / .4)'
-    : 'none',
-
-  // Always spread LAST so the library can position the item
-  ...draggableStyle,
-});
+    // Always spread LAST so the library can position the item correctly
+    ...draggableStyle,
+  });
 
   // Determine the status color class for Tailwind
   const getStatusColorClass = (color: string) => {
