@@ -1,10 +1,15 @@
-
-import React, { useState, useEffect } from 'react';
+/* src/components/prospects/ProspectStatusBoard.tsx */
+import React, { useEffect, useState } from 'react';
 import { DragDropContext } from '@hello-pangea/dnd';
+
 import { ProspectWithEngagement } from '@/services/supabaseService';
 import StatusColumn from './StatusColumn';
 import ProspectBoardLoading from './ProspectBoardLoading';
-import { distributeProspects, StatusColumn as StatusColumnType } from './utils/columnUtils';
+
+import {
+  distributeProspects,
+  StatusColumn as StatusColumnType,
+} from './utils/columnUtils';
 import { useDragDrop } from './hooks/useDragDrop';
 
 interface ProspectStatusBoardProps {
@@ -13,38 +18,48 @@ interface ProspectStatusBoardProps {
   onCreateLead: () => void;
 }
 
-const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, isLoading, onCreateLead }) => {
+/**
+ * Shows every engagement stage as a draggable column.
+ * The board itself owns the column state so a drag can
+ * update the UI instantly while the hook persists changes.
+ */
+const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({
+  prospects,
+  isLoading,
+  onCreateLead,
+}) => {
+  /** live state for every column with its prospects */
   const [columns, setColumns] = useState<StatusColumnType[]>([]);
+
+  /** custom hook wires drag-end to Supabase + toast */
   const { handleDragEnd } = useDragDrop(columns, setColumns);
-  
-  // Update columns when prospects change
+
+  /** whenever the prospects list changes, rebuild the board */
   useEffect(() => {
-    if (prospects.length > 0) {
-      setColumns(distributeProspects(prospects));
-    }
+    setColumns(distributeProspects(prospects));
   }, [prospects]);
-  
-  if (isLoading) {
-    return <ProspectBoardLoading />;
-  }
-  
+
+  if (isLoading) return <ProspectBoardLoading />;
+
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <div className="pb-4 overflow-x-auto">
-        <div className="flex gap-4" style={{ minWidth: 'max-content' }}>
-          {columns.map((column) => (
+      <div className="overflow-x-auto pb-4">
+        {/* we keep min-width so columns never squash on narrow screens */}
+        <section className="flex gap-4" style={{ minWidth: 'max-content' }}>
+          {columns.map((col) => (
             <StatusColumn
-              key={column.id}
-              id={column.id}
-              title={column.title}
-              prospects={column.prospects}
-              onCreateLead={column.id === 'new-lead' ? onCreateLead : undefined}
+              key={col.id}
+              id={col.id}
+              title={col.title}
+              prospects={col.prospects}
+              onCreateLead={col.id === 'new-lead' ? onCreateLead : undefined}
             />
           ))}
-        </div>
+        </section>
       </div>
     </DragDropContext>
   );
 };
 
 export default ProspectStatusBoard;
+
