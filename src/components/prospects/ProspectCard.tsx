@@ -31,7 +31,7 @@ const ProspectCard = forwardRef<HTMLDivElement, ProspectCardProps>(
     // Modify style to center the card on the mouse cursor during drag
     const modifiedStyle = style ? {
       ...style,
-      transform: `${style.transform} translate(-50%, -50%)`,
+      transform: `${style.transform} translate(50%, 50%)`,
     } : {};
 
     return (
