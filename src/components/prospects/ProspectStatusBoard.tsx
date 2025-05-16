@@ -4,6 +4,8 @@ import { ProspectWithEngagement } from '@/services/supabaseService';
 import StatusColumn from './StatusColumn';
 import ProspectBoardLoading from './ProspectBoardLoading';
 import { distributeProspects, StatusColumn as StatusColumnType } from './utils/columnUtils';
+import { useDragDrop } from './hooks/useDragDrop';
+import { DragDropContext } from '@atlaskit/pragmatic-drag-and-drop-react-beautiful-dnd-migration';
 
 interface ProspectStatusBoardProps {
   prospects: ProspectWithEngagement[];
@@ -13,6 +15,7 @@ interface ProspectStatusBoardProps {
 
 const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, isLoading, onCreateLead }) => {
   const [columns, setColumns] = useState<StatusColumnType[]>([]);
+  const { handleDragEnd } = useDragDrop(columns, setColumns);
   
   // Update columns when prospects change
   useEffect(() => {
@@ -27,20 +30,22 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
   
   return (
     <div className="pb-4 overflow-x-auto">
-      <div 
-        className="flex gap-4"
-        style={{ minWidth: 'max-content' }}
-      >
-        {columns.map(column => (
-          <StatusColumn
-            key={column.id}
-            id={column.id}
-            title={column.title}
-            prospects={column.prospects}
-            onCreateLead={column.id === 'new-lead' ? onCreateLead : undefined}
-          />
-        ))}
-      </div>
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <div 
+          className="flex gap-4"
+          style={{ minWidth: 'max-content' }}
+        >
+          {columns.map(column => (
+            <StatusColumn
+              key={column.id}
+              id={column.id}
+              title={column.title}
+              prospects={column.prospects}
+              onCreateLead={column.id === 'new-lead' ? onCreateLead : undefined}
+            />
+          ))}
+        </div>
+      </DragDropContext>
     </div>
   );
 };

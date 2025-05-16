@@ -4,6 +4,10 @@
 
 **URL**: https://lovable.dev/projects/ab60377c-2866-49f6-ad4a-fe3921f30cc4
 
+## Technologies
+
+This project uses Atlassian's Pragmatic Drag and Drop library for its intuitive, accessible drag and drop functionality that ensures reliable cursor tracking even during horizontal scrolling.
+
 ## How can I edit this code?
 
 There are several ways of editing your application.
@@ -59,6 +63,7 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+- @atlaskit/pragmatic-drag-and-drop
 
 ## How can I deploy this project?
 
