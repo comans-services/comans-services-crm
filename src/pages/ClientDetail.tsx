@@ -1,18 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Mail, Phone, Building, User, FileText, Upload, Trash2 } from 'lucide-react';
+import { ArrowLeft, Edit, Mail, Phone, Building, User, FileText, Upload } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getProspectById, moveClientToTrash } from '@/services';
+import { getProspectById, setupRealTimeSubscription, ActionItem } from '@/services/supabaseService';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/use-toast';
 import DocumentUploader from '@/components/clients/DocumentUploader';
 import ActionItemsList from '@/components/clients/ActionItemsList';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { setupRealTimeSubscription } from '@/services';
-import { ActionItem } from '@/services/types/serviceTypes';
 
 const ClientDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -20,7 +17,6 @@ const ClientDetail = () => {
   const queryClient = useQueryClient();
   const clientId = id || '';
   const [actionItems, setActionItems] = useState<ActionItem[]>([]);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
   // Fetch client data using React Query
   const { data: client, isLoading, error } = useQuery({
@@ -67,16 +63,6 @@ const ClientDetail = () => {
 
   const handleActionItemsExtracted = (items: ActionItem[]) => {
     setActionItems(prevItems => [...items, ...prevItems]);
-  };
-
-  const handleDeleteClient = async () => {
-    try {
-      await moveClientToTrash(clientId);
-      toast.success("Client moved to trash bin successfully");
-      navigate('/clients');
-    } catch (error: any) {
-      toast.error(`Error moving client to trash: ${error.message}`);
-    }
   };
   
   if (isLoading) {
@@ -135,40 +121,8 @@ const ClientDetail = () => {
             <Edit size={16} className="mr-2" />
             Edit Client
           </Button>
-          <Button 
-            variant="destructive" 
-            onClick={() => setIsDeleteDialogOpen(true)}
-            className="bg-red-600 hover:bg-red-700 text-white"
-          >
-            <Trash2 size={16} className="mr-2" />
-            Delete
-          </Button>
         </div>
       </div>
-      
-      {/* Delete Client Alert Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent className="bg-black/80 backdrop-blur-md border border-white/20 text-white">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">Delete Client</AlertDialogTitle>
-            <AlertDialogDescription className="text-white/70">
-              Are you sure you want to move {client.first_name} {client.last_name} to the trash bin?
-              This action can be reversed by restoring from the trash later.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="border-white/20 text-white hover:bg-white/10 hover:text-white">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDeleteClient}
-              className="bg-red-600 hover:bg-red-700 text-white"
-            >
-              Move to Trash
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="card md:col-span-2">

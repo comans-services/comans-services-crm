@@ -1,3 +1,4 @@
+
 // Types for Supabase tables
 export interface ProspectProfile {
   id: string;
@@ -9,8 +10,6 @@ export interface ProspectProfile {
   address?: string;
   created_at: string;
   updated_at: string;
-  is_deleted?: boolean;
-  deleted_at?: string;
 }
 
 export interface ProspectEngagement {
