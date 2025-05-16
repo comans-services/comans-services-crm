@@ -4,6 +4,7 @@ import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ProspectWithEngagement } from '@/services/supabaseService';
 import ProspectCard from './ProspectCard';
+import { Droppable } from '@hello-pangea/dnd';
 
 interface StatusColumnProps {
   id: string;
@@ -35,35 +36,45 @@ const StatusColumn: React.FC<StatusColumnProps> = ({ id, title, prospects, onCre
           )}
         </div>
         
-        <div className="flex-1 overflow-y-auto p-2">
-          {prospects.map((prospect, index) => (
-            <ProspectCard 
-              key={prospect.dragId || prospect.id}
-              prospect={prospect} 
-              index={index} 
-            />
-          ))}
-          
-          {prospects.length === 0 && id !== 'new-lead' && (
-            <div className="flex items-center justify-center h-16 border border-dashed border-white/10 rounded-md">
-              <span className="text-xs text-white/50">
-                No prospects
-              </span>
+        <Droppable droppableId={id}>
+          {(provided, snapshot) => (
+            <div 
+              className="flex-1 overflow-y-auto p-2"
+              ref={provided.innerRef}
+              {...provided.droppableProps}
+            >
+              {prospects.map((prospect, index) => (
+                <ProspectCard 
+                  key={prospect.dragId || prospect.id}
+                  prospect={prospect} 
+                  index={index} 
+                />
+              ))}
+              
+              {prospects.length === 0 && id !== 'new-lead' && (
+                <div className="flex items-center justify-center h-16 border border-dashed border-white/10 rounded-md">
+                  <span className="text-xs text-white/50">
+                    No prospects
+                  </span>
+                </div>
+              )}
+              
+              {prospects.length === 0 && id === 'new-lead' && (
+                <div className="flex items-center justify-center h-16 border border-dashed border-white/10 rounded-md">
+                  <button 
+                    className="text-xs text-white/50 hover:text-white/80 flex items-center"
+                    onClick={onCreateLead}
+                  >
+                    <Plus size={14} className="mr-1" />
+                    Create New Lead
+                  </button>
+                </div>
+              )}
+              
+              {provided.placeholder}
             </div>
           )}
-          
-          {prospects.length === 0 && id === 'new-lead' && (
-            <div className="flex items-center justify-center h-16 border border-dashed border-white/10 rounded-md">
-              <button 
-                className="text-xs text-white/50 hover:text-white/80 flex items-center"
-                onClick={onCreateLead}
-              >
-                <Plus size={14} className="mr-1" />
-                Create New Lead
-              </button>
-            </div>
-          )}
-        </div>
+        </Droppable>
       </div>
     </div>
   );

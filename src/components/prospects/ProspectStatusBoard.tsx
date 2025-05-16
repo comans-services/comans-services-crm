@@ -28,23 +28,23 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({ prospects, is
     return <ProspectBoardLoading />;
   }
   
-return (
-  <DragDropContext onDragEnd={handleDragEnd}>
-    <div className="pb-4 overflow-x-auto">
-      <div className="flex gap-4" style={{ minWidth: 'max-content' }}>
-        {columns.map((column) => (
-          <StatusColumn
-            key={column.id}
-            id={column.id}
-            title={column.title}
-            prospects={column.prospects}
-            onCreateLead={column.id === 'new-lead' ? onCreateLead : undefined}
-          />
-        ))}
+  return (
+    <DragDropContext onDragEnd={handleDragEnd}>
+      <div className="pb-4 overflow-x-auto">
+        <div className="flex gap-4" style={{ minWidth: 'max-content' }}>
+          {columns.map((column) => (
+            <StatusColumn
+              key={column.id}
+              id={column.id}
+              title={column.title}
+              prospects={column.prospects}
+              onCreateLead={column.id === 'new-lead' ? onCreateLead : undefined}
+            />
+          ))}
+        </div>
       </div>
-    </div>
-  </DragDropContext>
-);
+    </DragDropContext>
+  );
 };
 
 export default ProspectStatusBoard;
