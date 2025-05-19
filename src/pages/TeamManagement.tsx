@@ -21,11 +21,17 @@ import { TeamMember } from '@/services/types/serviceTypes';
 const TeamManagement = () => {
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [currentMember, setCurrentMember] = useState({
+  const [currentMember, setCurrentMember] = useState<{
+    id?: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    role: 'admin' | 'salesperson';
+  }>({
     first_name: '',
     last_name: '',
     email: '',
-    role: 'salesperson' as const
+    role: 'salesperson'
   });
 
   // Fetch team members
