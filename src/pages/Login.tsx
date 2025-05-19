@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -45,6 +44,7 @@ const Login = () => {
       
       if (user) {
         toast.success('Login successful');
+        // The profile setup dialog will appear automatically if needed
         // Navigate to the intended destination
         navigate(from, { replace: true });
       }
