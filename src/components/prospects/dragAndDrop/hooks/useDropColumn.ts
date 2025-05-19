@@ -54,25 +54,27 @@ export function useDropColumn<T>({
       element,
       getIsSticky: () => true,
       onDragEnter: ({ source, location }) => {
-        const payload = source.data as BoardDragPayload<T>;
+        // Cast to unknown first, then to our payload type
+        const payload = source.data as unknown as BoardDragPayload<T>;
         
         // Only handle our board items
         if (!payload.itemId || !payload.columnId) {
           return;
         }
         
-        const index = calculateDropIndex(element, location.current.clientY);
+        const index = calculateDropIndex(element, location.current.y);
         onDragUpdate(columnId, index);
       },
-      onDragOver: ({ source, location }) => {
-        const payload = source.data as BoardDragPayload<T>;
+      onDrag: ({ source, location }) => {
+        // Cast to unknown first, then to our payload type
+        const payload = source.data as unknown as BoardDragPayload<T>;
         
         // Only handle our board items
         if (!payload.itemId || !payload.columnId) {
           return;
         }
         
-        const index = calculateDropIndex(element, location.current.clientY);
+        const index = calculateDropIndex(element, location.current.y);
         onDragUpdate(columnId, index);
       },
     });

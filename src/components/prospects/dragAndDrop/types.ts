@@ -1,5 +1,6 @@
 
-import { ElementDragPayload } from '@atlaskit/pragmatic-drag-and-drop/element/types';
+// Import from the correct module
+import type { DragData } from '@atlaskit/pragmatic-drag-and-drop/element/types';
 
 // Generic interface for our draggable item
 export interface DraggableItem<T> {
@@ -12,6 +13,7 @@ export interface Column<T> {
   id: string;
   title: string;
   items: DraggableItem<T>[];
+  prospects?: T[]; // Added for backward compatibility with StatusColumn
 }
 
 // Interface for drag state
@@ -25,7 +27,7 @@ export interface DragState<T> {
 }
 
 // Custom drag payload for our board
-export interface BoardDragPayload<T> extends ElementDragPayload {
+export interface BoardDragPayload<T> extends Record<string, unknown> {
   itemId: string;
   itemData: T;
   columnId: string;

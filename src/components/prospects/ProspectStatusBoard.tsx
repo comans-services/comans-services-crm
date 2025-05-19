@@ -15,12 +15,34 @@ import { useBoard } from './dragAndDrop/useBoard';
 import { useDropColumn } from './dragAndDrop/hooks/useDropColumn';
 import { DragOverlay } from './dragAndDrop/DragOverlay';
 import ProspectCard from './ProspectCard';
+import { Column } from './dragAndDrop/types';
 
 interface ProspectStatusBoardProps {
   prospects: ProspectWithEngagement[];
   isLoading: boolean;
   onCreateLead: () => void;
 }
+
+// Helper to convert between types
+const convertToGenericColumns = (columns: StatusColumnType[]): Column<ProspectWithEngagement>[] => {
+  return columns.map(col => ({
+    id: col.id,
+    title: col.title,
+    items: col.prospects.map(p => ({
+      id: p.dragId || p.id.toString(),
+      data: p
+    })),
+    prospects: col.prospects // Keep for backwards compatibility
+  }));
+};
+
+const convertFromGenericColumns = (columns: Column<ProspectWithEngagement>[]): StatusColumnType[] => {
+  return columns.map(col => ({
+    id: col.id,
+    title: col.title,
+    prospects: col.items.map(item => item.data)
+  }));
+};
 
 /**
  * Shows every engagement stage as a draggable column.
@@ -39,20 +61,28 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({
   onCreateLead,
 }) => {
   /** live state for every column with its prospects */
-  const [columns, setColumns] = useState<StatusColumnType[]>([]);
+  const [statusColumns, setStatusColumns] = useState<StatusColumnType[]>([]);
+  
+  // Convert to generic columns for the drag-and-drop system
+  const [columns, setColumns] = useState<Column<ProspectWithEngagement>[]>([]);
   
   /** Track mouse position for drag overlay */
   const mousePositionRef = useRef({ x: 0, y: 0 });
   
   /** whenever the prospects list changes, rebuild the board */
   useEffect(() => {
-    setColumns(distributeProspects(prospects));
+    const newStatusColumns = distributeProspects(prospects);
+    setStatusColumns(newStatusColumns);
+    setColumns(convertToGenericColumns(newStatusColumns));
   }, [prospects]);
   
   /** Configure our drag and drop handlers */
   const { dragState, handlers } = useBoard<ProspectWithEngagement>({
     initialColumns: columns,
     onColumnUpdate: async (updatedColumns) => {
+      // Convert back to StatusColumn type
+      const updatedStatusColumns = convertFromGenericColumns(updatedColumns);
+      
       // When columns are updated due to drag
       if (dragState.activeId && 
           dragState.sourceColumn !== null &&
@@ -60,7 +90,7 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({
         
         try {
           // Find the moved prospect
-          const movedProspect = updatedColumns
+          const movedProspect = updatedStatusColumns
             .find(col => col.id === dragState.destinationColumn)
             ?.prospects.find(p => p.dragId === dragState.activeId || p.id.toString() === dragState.activeId);
           
@@ -100,6 +130,7 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({
         }
       }
       
+      setStatusColumns(updatedStatusColumns);
       setColumns(updatedColumns);
     },
   });
@@ -122,7 +153,7 @@ const ProspectStatusBoard: React.FC<ProspectStatusBoardProps> = ({
         className="flex gap-4 overflow-x-auto pb-4"
         style={{ minWidth: 'max-content' }}
       >
-        {columns.map((col) => (
+        {statusColumns.map((col) => (
           <DraggableColumn
             key={col.id}
             column={col}

@@ -1,8 +1,9 @@
 
 import React, { ReactNode } from 'react';
-import { combine } from '@atlaskit/pragmatic-drag-and-drop';
+// Fix the import for combine
 import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
-import { setCustomNativeDragPreview } from '@atlaskit/pragmatic-drag-and-drop/element/adapter/preview';
+// Import correctly for preview
+import { setCustomNativeDragPreview } from '@atlaskit/pragmatic-drag-and-drop/element/preview';
 
 interface DragDropProviderProps {
   children: ReactNode;
@@ -20,26 +21,24 @@ interface DragDropProviderProps {
 export const DragDropProvider: React.FC<DragDropProviderProps> = ({ children }) => {
   React.useEffect(() => {
     // Set up the element monitor which adds event listeners to DOM elements
-    const cleanup = combine(
-      monitorForElements({
-        canMonitor: () => true,
-        onDragStart: (event) => {
-          // Hide the default browser ghost image
-          if (event.source.element) {
-            setCustomNativeDragPreview({
-              nativeEvent: event.nativeEvent,
-              render: () => {
-                // Creating an invisible element results in no ghost
-                // We'll use our own DragOverlay component instead
-                const el = document.createElement('div');
-                el.style.opacity = '0';
-                return el;
-              },
-            });
-          }
-        },
-      }),
-    );
+    const cleanup = monitorForElements({
+      canMonitor: () => true,
+      onDragStart: (event) => {
+        // Hide the default browser ghost image
+        if (event.source.element) {
+          setCustomNativeDragPreview({
+            dragEvent: event.nativeSetDragImage,
+            render: () => {
+              // Creating an invisible element results in no ghost
+              // We'll use our own DragOverlay component instead
+              const el = document.createElement('div');
+              el.style.opacity = '0';
+              return el;
+            },
+          });
+        }
+      },
+    });
 
     // Clean up event listeners when component unmounts
     return cleanup;

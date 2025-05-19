@@ -50,14 +50,14 @@ export function useDragHandlers<T>({
     return draggable({
       element,
       dragHandle: element,
-      getInitialData: () => ({
-        itemId,
-        itemData,
-        columnId,
-        index,
-      } as BoardDragPayload<T>),
-      onGenerateDragPreview: ({ nativeEvent }) => {
-        // We'll handle the preview with DragOverlay component
+      getInitialData: () => {
+        const payload: BoardDragPayload<T> = {
+          itemId,
+          itemData,
+          columnId,
+          index,
+        };
+        return payload;
       },
       onDragStart: () => {
         setDragState({
@@ -83,7 +83,8 @@ export function useDragHandlers<T>({
       element,
       getIsSticky: () => true,
       onDragEnter: ({ source }) => {
-        const payload = source.data as BoardDragPayload<T>;
+        // Type-safety: Cast to unknown first
+        const payload = source.data as unknown as BoardDragPayload<T>;
         
         // Only handle our board items
         if (!payload.itemId || !payload.columnId) {
@@ -99,7 +100,8 @@ export function useDragHandlers<T>({
         }));
       },
       onDrop: async ({ source }) => {
-        const payload = source.data as BoardDragPayload<T>;
+        // Type-safety: Cast to unknown first
+        const payload = source.data as unknown as BoardDragPayload<T>;
         
         // Only handle our board items
         if (!payload.itemId || !payload.columnId) {

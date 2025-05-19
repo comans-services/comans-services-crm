@@ -31,12 +31,15 @@ export function useDragItem<T>({
     
     const cleanup = draggable({
       element,
-      getInitialData: () => ({
-        itemId: id,
-        itemData: data,
-        columnId,
-        index,
-      } as BoardDragPayload<T>),
+      getInitialData: () => {
+        const payload: BoardDragPayload<T> = {
+          itemId: id,
+          itemData: data,
+          columnId,
+          index,
+        };
+        return payload;
+      },
       onDragStart: () => {
         onDragStart(id, columnId, index, data);
       },

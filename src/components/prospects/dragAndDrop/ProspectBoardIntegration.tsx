@@ -1,3 +1,4 @@
+
 import React, { useRef } from 'react';
 import { ProspectWithEngagement } from '@/services/types/serviceTypes';
 import DragDropProvider from './DragDropProvider';
@@ -10,6 +11,20 @@ import StatusColumn from '../StatusColumn';
 import { StatusColumn as StatusColumnType } from '../utils/columnUtils';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Column } from './types';
+
+// Helper to convert between types
+const convertToGenericColumns = (columns: StatusColumnType[]): Column<ProspectWithEngagement>[] => {
+  return columns.map(col => ({
+    id: col.id,
+    title: col.title,
+    items: col.prospects.map(p => ({
+      id: p.dragId || p.id.toString(),
+      data: p
+    })),
+    prospects: col.prospects // Keep for backwards compatibility
+  }));
+};
 
 /**
  * Integration example showing how to use the drag-and-drop system
@@ -22,9 +37,20 @@ export const ProspectBoardIntegrationExample: React.FC<{
   columns: StatusColumnType[];
   onUpdate: (columns: StatusColumnType[]) => void;
 }> = ({ columns: initialColumns, onUpdate }) => {
+  // Convert StatusColumn[] to Column<ProspectWithEngagement>[]
+  const genericColumns = convertToGenericColumns(initialColumns);
+  
   const { columns, dragState, handlers } = useBoard<ProspectWithEngagement>({
-    initialColumns,
-    onColumnUpdate: onUpdate,
+    initialColumns: genericColumns,
+    onColumnUpdate: (updatedColumns) => {
+      // Convert back to StatusColumn[] before calling onUpdate
+      const statusColumns: StatusColumnType[] = updatedColumns.map(col => ({
+        id: col.id,
+        title: col.title,
+        prospects: col.items.map(item => item.data)
+      }));
+      onUpdate(statusColumns);
+    },
   });
 
   // Track mouse position for overlay
@@ -45,7 +71,11 @@ export const ProspectBoardIntegrationExample: React.FC<{
         {columns.map((col) => (
           <ColumnWithDropZone
             key={col.id}
-            column={col}
+            column={{
+              id: col.id,
+              title: col.title,
+              prospects: col.items.map(item => item.data)
+            }}
             onDragUpdate={handlers.onDragUpdate}
             onDragStart={handlers.onDragStart}
           />

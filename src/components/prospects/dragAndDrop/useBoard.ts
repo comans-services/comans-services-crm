@@ -23,25 +23,8 @@ export function useBoard<T>({
     destinationIndex: null,
   });
   
-  // Mouse position tracking for drag overlay
-  const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
-  
   // Track if we need to animate a card back to its original position
   const animateBackRef = useRef<boolean>(false);
-  
-  // Handle mouse movement to update the overlay position
-  useEffect(() => {
-    const handleMouseMove = (event: MouseEvent) => {
-      if (dragState.activeId) {
-        setMousePosition({ x: event.clientX, y: event.clientY });
-      }
-    };
-    
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-    };
-  }, [dragState.activeId]);
   
   // Callbacks for drag events
   const onDragStart = useCallback((itemId: string, columnId: string, index: number, data: T) => {
@@ -86,8 +69,27 @@ export function useBoard<T>({
         const destColumnIndex = newColumns.findIndex(col => col.id === dragState.destinationColumn);
         
         if (sourceColumnIndex !== -1 && destColumnIndex !== -1) {
+          // Create draggable item if it doesn't exist yet
+          const sourceItems = newColumns[sourceColumnIndex].items || [];
+          
+          // For backward compatibility with StatusColumn
+          if (newColumns[sourceColumnIndex].prospects && !newColumns[sourceColumnIndex].items) {
+            newColumns[sourceColumnIndex].items = newColumns[sourceColumnIndex].prospects!.map(p => ({
+              id: typeof p === 'object' && p !== null && 'id' in p ? `${p.id}` : 'unknown',
+              data: p
+            }));
+          }
+          
           // Remove the item from its original position
           const [movedItem] = newColumns[sourceColumnIndex].items.splice(dragState.sourceIndex, 1);
+          
+          // For backward compatibility with StatusColumn
+          if (newColumns[destColumnIndex].prospects && !newColumns[destColumnIndex].items) {
+            newColumns[destColumnIndex].items = newColumns[destColumnIndex].prospects!.map(p => ({
+              id: typeof p === 'object' && p !== null && 'id' in p ? `${p.id}` : 'unknown',
+              data: p
+            }));
+          }
           
           // Insert it in the new position
           newColumns[destColumnIndex].items.splice(dragState.destinationIndex, 0, movedItem);
