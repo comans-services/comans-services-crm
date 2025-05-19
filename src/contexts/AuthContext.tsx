@@ -2,7 +2,8 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AuthUser, AuthSession, getCurrentSession } from '@/services/authService';
-import { getUserProfile, TeamMember } from '@/services/teamService';
+import { getUserProfile, updateUserProfile } from '@/services/teamService';
+import { TeamMember } from '@/services/types/serviceTypes';
 import ProfileSetupDialog from '@/components/auth/ProfileSetupDialog';
 
 interface AuthContextType {
