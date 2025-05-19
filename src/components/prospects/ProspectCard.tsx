@@ -28,10 +28,19 @@ const ProspectCard = forwardRef<HTMLDivElement, ProspectCardProps>(
       }
     })();
 
-    // Create a modified style that centers the card on the cursor during drag
+    // Create a modified style that enhances the dragging experience
     const modifiedStyle = style ? {
       ...style,
+      // Center the card on cursor for better drag positioning
       transform: `${style.transform} translate(-50%, -50%)`,
+      // Add a subtle zoom effect and shadow when dragging
+      ...(style.position === 'fixed' ? {
+        zIndex: 9999,
+        boxShadow: '0 8px 16px rgba(0, 0, 0, 0.15)',
+        borderRadius: '8px',
+        transition: 'transform 150ms ease-in-out, box-shadow 150ms ease-in-out',
+        background: 'rgba(18, 18, 18, 0.95)', // Slightly darker background when dragging
+      } : {})
     } : {};
 
     return (
