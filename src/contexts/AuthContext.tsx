@@ -2,7 +2,6 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AuthUser, AuthSession, getCurrentSession } from '@/services/authService';
-import { setupAuthListeners } from '@/hooks/useAuthListeners';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -30,8 +29,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = setupAuthListeners(setSession, setUser);
-    
+    // Set up auth state listener first
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, currentSession) => {
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+        
+        // If we've signed in, do any additional setup asynchronously
+        if (event === 'SIGNED_IN' && currentSession?.user) {
+          // Use setTimeout to prevent potential deadlocks
+          setTimeout(() => {
+            console.log('User signed in:', currentSession.user.email);
+          }, 0);
+        }
+      }
+    );
+
     // Then check for existing session
     const initializeAuth = async () => {
       try {
@@ -48,7 +61,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initializeAuth();
 
     // Clean up subscription on unmount
-    return unsubscribe;
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   return (

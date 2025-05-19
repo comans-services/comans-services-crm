@@ -1,111 +1,68 @@
 
-import React from 'react';
-import { Draggable } from '@hello-pangea/dnd';
+import React, { forwardRef } from 'react';
 import { ProspectWithEngagement } from '@/services/types/serviceTypes';
 
 interface ProspectCardProps {
   prospect: ProspectWithEngagement;
-  index: number;
+  // the next three props are injected by <Draggable>
+  dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
+  draggableProps?: React.HTMLAttributes<HTMLDivElement>;
+  style?: React.CSSProperties;
 }
 
-const ProspectCard: React.FC<ProspectCardProps> = ({ prospect, index }) => {
-  // Perfected cursor alignment during drag operations
-  const getItemStyle = (isDragging: boolean, draggableStyle: any) => ({
-    // Base styles
-    userSelect: 'none' as const,
-    padding: 12, // Consistent 12px padding
-    margin: '0 0 8px 0',
-    
-    // Visual feedback when dragging
-    background: isDragging ? 'rgba(59, 130, 246, 0.6)' : 'rgba(255, 255, 255, 0.05)',
-    borderColor: isDragging ? 'rgb(59, 130, 246)' : 'rgba(255, 255, 255, 0.1)',
-    boxShadow: isDragging ? '0 10px 15px rgba(0, 0, 0, 0.4)' : 'none',
-    
-    // Critical alignment fixes for cursor
-    ...(isDragging ? {
-      // Remove any margin or padding that could cause offset
-      pointerEvents: 'none',
-      // Set position to fixed to avoid any offset from parent containers
-      position: 'fixed',
-      // Top and left are controlled by the library, we need to ensure no additional offset
-      zIndex: 9999,
-      // Force full opacity and visibility
-      opacity: 1,
-      visibility: 'visible',
-      // Remove any transform scale that might cause misalignment
-      transform: draggableStyle?.transform 
-        ? draggableStyle.transform.replace(/scale\([^)]+\)/g, '') 
-        : 'translate(0px, 0px)',
-      // Set transform origin to top left corner for precise positioning
-      transformOrigin: 'top left',
-      // Remove any transition that could make the card lag behind cursor
-      transition: 'none',
-      // Width from draggable style
-      width: draggableStyle?.width || 'auto',
-      // Use grabbing cursor 
-      cursor: 'grabbing',
-      padding: 12, // Ensure consistent padding when dragging
-    } : {}),
-    
-    // Apply draggable styles provided by the library
-    ...draggableStyle,
-  });
+const ProspectCard = forwardRef<HTMLDivElement, ProspectCardProps>(
+  ({ prospect, dragHandleProps, draggableProps, style }, ref) => {
+    /** Pick a Tailwind colour chip for the status dot */
+    const colourClass = (() => {
+      switch (prospect.statusColor) {
+        case 'green':
+          return 'bg-green-500';
+        case 'yellow':
+          return 'bg-yellow-500';
+        case 'orange':
+          return 'bg-orange-500';
+        case 'red':
+          return 'bg-red-500';
+        default:
+          return 'bg-gray-500';
+      }
+    })();
 
-  // Determine the status color class for Tailwind
-  const getStatusColorClass = (color: string) => {
-    switch (color) {
-      case 'green': return 'bg-green-500';
-      case 'yellow': return 'bg-yellow-500';
-      case 'orange': return 'bg-orange-500';
-      case 'red': return 'bg-red-500';
-      case 'gray': 
-      default: return 'bg-gray-500';
-    }
-  };
+    // Modify style to ensure top and left are 0px and position is not fixed
+    const modifiedStyle = style ? {
+      ...style,
+      top: 0,
+      left: 0,
+      position: style.position === 'fixed' ? 'absolute' : style.position
+    } : {};
 
-  const statusColorClass = getStatusColorClass(prospect.statusColor);
+    return (
+      <div
+        ref={ref}
+        {...draggableProps}
+        {...dragHandleProps}
+        style={modifiedStyle}
+        className="rounded-md border border-white/10 bg-white/5 transition-all"
+      >
+        <div className="p-3">
+          <div className="px-2 text-sm font-medium">
+            {prospect.first_name} {prospect.last_name}
+          </div>
 
-  return (
-    <Draggable 
-      key={prospect.dragId || prospect.id} 
-      draggableId={prospect.dragId || prospect.id} 
-      index={index}
-    >
-      {(provided, snapshot) => (
-        <div
-          ref={provided.innerRef}
-          {...provided.draggableProps}
-          {...provided.dragHandleProps}
-          style={getItemStyle(
-            snapshot.isDragging,
-            provided.draggableProps.style
-          )}
-          className={`mb-3 rounded-md border transition-all ${
-            snapshot.isDragging 
-              ? 'border-blue-500'
-              : 'border-white/10'
-          }`}
-        >
-          <div className="cursor-move p-3"> {/* Consistent inner padding */}
-            <div className="text-sm font-medium px-2">
-              {prospect.first_name} {prospect.last_name}
+          <div className="mt-2 px-2 text-xs text-white/60">{prospect.company}</div>
+
+          <div className="mt-3 flex items-center justify-between px-2 text-xs">
+            <div className="rounded bg-white/10 px-3 py-1">
+              {prospect.daysSinceLastContact !== null
+                ? `${prospect.daysSinceLastContact} days ago`
+                : 'New lead'}
             </div>
-            <div className="text-xs text-white/60 mt-2 px-2">
-              {prospect.company}
-            </div>
-            <div className="mt-3 flex justify-between items-center text-xs px-2">
-              <div className="bg-white/10 rounded px-3 py-1">
-                {prospect.daysSinceLastContact !== null 
-                  ? `${prospect.daysSinceLastContact} days ago` 
-                  : 'New lead'}
-              </div>
-              <div className={`w-2 h-2 rounded-full ${statusColorClass}`}></div>
-            </div>
+            <span className={`h-2 w-2 rounded-full ${colourClass}`} />
           </div>
         </div>
-      )}
-    </Draggable>
-  );
-};
+      </div>
+    );
+  },
+);
 
 export default ProspectCard;

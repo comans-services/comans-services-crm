@@ -1,8 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { TeamMember } from './types/serviceTypes';
-import { getUserActivity } from './activityService';
-import { setupRealTimeSubscription } from './base/supabaseBase';
 
 /**
  * Fetches all team members (app_users)
@@ -83,6 +81,3 @@ export const removeTeamMember = async (id: string): Promise<boolean> => {
 
   return true;
 };
-
-// Re-export the imported functions to maintain API compatibility
-export { getUserActivity, setupRealTimeSubscription };

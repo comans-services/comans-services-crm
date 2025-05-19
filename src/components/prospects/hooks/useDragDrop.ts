@@ -3,9 +3,10 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { StatusColumn } from '../utils/columnUtils';
+import { DropResult } from '@hello-pangea/dnd';
 
 export const useDragDrop = (initialColumns: StatusColumn[], setColumns: React.Dispatch<React.SetStateAction<StatusColumn[]>>) => {
-  const handleDragEnd = async (result: any) => {
+  const handleDragEnd = async (result: DropResult) => {
     const { destination, source, draggableId } = result;
     
     // If no destination or dropped in the same place
