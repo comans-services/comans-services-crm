@@ -4,18 +4,14 @@ import { ProspectWithEngagement } from '@/services/types/serviceTypes';
 
 interface ProspectCardProps {
   prospect: ProspectWithEngagement;
+  // the next three props are injected by <Draggable>
+  dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
+  draggableProps?: React.HTMLAttributes<HTMLDivElement>;
   style?: React.CSSProperties;
 }
 
-/**
- * Displays a prospect's basic information in a card format
- * 
- * @remarks
- * This component is now used both as a standard display card
- * and as the ghost/preview element during drag operations.
- */
 const ProspectCard = forwardRef<HTMLDivElement, ProspectCardProps>(
-  ({ prospect, style }, ref) => {
+  ({ prospect, dragHandleProps, draggableProps, style }, ref) => {
     /** Pick a Tailwind colour chip for the status dot */
     const colourClass = (() => {
       switch (prospect.statusColor) {
@@ -32,10 +28,19 @@ const ProspectCard = forwardRef<HTMLDivElement, ProspectCardProps>(
       }
     })();
 
+    // Modify style to ensure top is 150px, left is 100px and position is not fixed
+    const modifiedStyle = style ? {
+      ...style,
+      top: 150,
+      left: 100,
+    } : {};
+
     return (
       <div
         ref={ref}
-        style={style}
+        {...draggableProps}
+        {...dragHandleProps}
+        style={modifiedStyle}
         className="rounded-md border border-white/10 bg-white/5 transition-all"
       >
         <div className="p-3">
