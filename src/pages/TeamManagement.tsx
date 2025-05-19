@@ -1,45 +1,31 @@
 
 import React, { useState, useEffect } from 'react';
-import { User, Edit, Trash2, Plus, Mail, Clock } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { 
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { getTeamMembers, addTeamMember, updateTeamMember, removeTeamMember, getUserActivity, setupRealTimeSubscription, TeamMember } from '@/services/supabaseService';
+import { getTeamMembers, addTeamMember, updateTeamMember, removeTeamMember, getUserActivity, setupRealTimeSubscription } from '@/services/teamService';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { format } from 'date-fns';
-
-interface TeamMemberFormData {
-  id?: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  role: 'admin' | 'salesperson';
-}
+import TeamMembersTable from '@/components/team/TeamMembersTable';
+import ActivityLog from '@/components/team/ActivityLog';
+import TeamMemberForm from '@/components/team/TeamMemberForm';
+import { TeamMember } from '@/services/types/serviceTypes';
 
 const TeamManagement = () => {
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [currentMember, setCurrentMember] = useState<TeamMemberFormData>({
+  const [currentMember, setCurrentMember] = useState({
     first_name: '',
     last_name: '',
     email: '',
-    role: 'salesperson'
+    role: 'salesperson' as const
   });
 
   // Fetch team members
@@ -129,35 +115,33 @@ const TeamManagement = () => {
     setIsDialogOpen(true);
   };
 
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleFormSubmit = async (member: any) => {
     try {
-      if (currentMember.id) {
+      if (member.id) {
         // Update existing member
-        await updateTeamMember(currentMember.id, {
-          first_name: currentMember.first_name,
-          last_name: currentMember.last_name,
-          email: currentMember.email,
-          role: currentMember.role
+        await updateTeamMember(member.id, {
+          first_name: member.first_name,
+          last_name: member.last_name,
+          email: member.email,
+          role: member.role
         });
         
         toast({
           title: "Team member updated",
-          description: `${currentMember.first_name} ${currentMember.last_name} has been updated successfully.`,
+          description: `${member.first_name} ${member.last_name} has been updated successfully.`,
         });
       } else {
         // Add new member
         await addTeamMember({
-          first_name: currentMember.first_name,
-          last_name: currentMember.last_name,
-          email: currentMember.email,
-          role: currentMember.role
+          first_name: member.first_name,
+          last_name: member.last_name,
+          email: member.email,
+          role: member.role
         });
         
         toast({
           title: "Team member added",
-          description: `${currentMember.first_name} ${currentMember.last_name} has been added successfully.`,
+          description: `${member.first_name} ${member.last_name} has been added successfully.`,
         });
       }
       
@@ -170,23 +154,6 @@ const TeamManagement = () => {
       });
     }
   };
-
-  // Helper function to format time ago
-  function formatTimeAgo(date: Date): string {
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffSecs = Math.floor(diffMs / 1000);
-    const diffMins = Math.floor(diffSecs / 60);
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffSecs < 60) return 'Just now';
-    if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
-    if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
-    if (diffDays < 30) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
-    
-    return format(date, 'MMM d, yyyy');
-  }
 
   if (isLoadingTeam || isLoadingActivity) {
     return <div className="text-center py-10">Loading team data...</div>;
@@ -207,94 +174,15 @@ const TeamManagement = () => {
       
       <div className="grid grid-cols-1 gap-8">
         <Card className="bg-[#0f133e] text-white border-white/10">
-          <CardHeader>
-            <CardTitle>Team Members</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow className="border-white/10">
-                  <TableHead className="text-white">Name</TableHead>
-                  <TableHead className="text-white">Email</TableHead>
-                  <TableHead className="text-white">Role</TableHead>
-                  <TableHead className="text-white">Last Active</TableHead>
-                  <TableHead className="text-right text-white">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {teamMembers.map((member) => (
-                  <TableRow key={member.id} className="border-white/10">
-                    <TableCell className="font-medium text-white">
-                      <div className="flex items-center">
-                        <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center mr-2">
-                          <User size={14} />
-                        </div>
-                        {member.first_name} {member.last_name}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-white">{member.email}</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        member.role === 'admin' ? 'bg-crm-accent/20 text-crm-accent' : 'bg-blue-500/20 text-blue-500'
-                      }`}>
-                        {member.role}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-white">
-                      <div className="flex items-center text-white/70">
-                        <Clock size={14} className="mr-1" /> 
-                        {member.last_active 
-                          ? formatTimeAgo(new Date(member.last_active))
-                          : 'Never'}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end space-x-2">
-                        <Button variant="outline" size="sm" onClick={() => handleEditMember(member)} className="bg-transparent hover:bg-white/10">
-                          <Edit size={14} />
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleDeleteMember(member.id)} className="bg-transparent hover:bg-white/10">
-                          <Trash2 size={14} />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
+          <TeamMembersTable 
+            teamMembers={teamMembers}
+            onEdit={handleEditMember}
+            onDelete={handleDeleteMember}
+          />
         </Card>
         
         <Card className="bg-[#0f133e] text-white border-white/10">
-          <CardHeader>
-            <CardTitle>Activity Log</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {activityLog.length > 0 ? activityLog.map((log) => (
-                <div key={log.id} className="flex items-start border-b border-white/10 pb-4 last:border-0">
-                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center mr-3">
-                    <User size={14} />
-                  </div>
-                  <div>
-                    <p>
-                      <span className="font-medium">
-                        {log.app_user?.first_name} {log.app_user?.last_name}
-                      </span>{' '}
-                      <span className="text-white/70">{log.activity_type}</span>
-                    </p>
-                    <p className="text-xs text-white/50 mt-1">
-                      {formatTimeAgo(new Date(log.occurred_at))}
-                    </p>
-                  </div>
-                </div>
-              )) : (
-                <div className="text-center py-4 text-white/50">
-                  No activity recorded yet
-                </div>
-              )}
-            </div>
-          </CardContent>
+          <ActivityLog activityLog={activityLog} />
         </Card>
       </div>
       
@@ -309,72 +197,11 @@ const TeamManagement = () => {
             </DialogDescription>
           </DialogHeader>
           
-          <form onSubmit={handleFormSubmit}>
-            <div className="space-y-4 py-2">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="first_name" className="text-sm font-medium mb-2 block text-white">
-                    First Name
-                  </label>
-                  <input
-                    type="text"
-                    id="first_name"
-                    value={currentMember.first_name}
-                    onChange={(e) => setCurrentMember({...currentMember, first_name: e.target.value})}
-                    className="px-3 py-2 bg-white/5 border border-white/20 rounded-md focus:outline-none focus:ring-2 focus:ring-crm-accent/50 text-white w-full"
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="last_name" className="text-sm font-medium mb-2 block text-white">
-                    Last Name
-                  </label>
-                  <input
-                    type="text"
-                    id="last_name"
-                    value={currentMember.last_name}
-                    onChange={(e) => setCurrentMember({...currentMember, last_name: e.target.value})}
-                    className="px-3 py-2 bg-white/5 border border-white/20 rounded-md focus:outline-none focus:ring-2 focus:ring-crm-accent/50 text-white w-full"
-                    required
-                  />
-                </div>
-              </div>
-              <div>
-                <label htmlFor="email" className="text-sm font-medium mb-2 block text-white">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  value={currentMember.email}
-                  onChange={(e) => setCurrentMember({...currentMember, email: e.target.value})}
-                  className="px-3 py-2 bg-white/5 border border-white/20 rounded-md focus:outline-none focus:ring-2 focus:ring-crm-accent/50 text-white w-full"
-                  required
-                />
-              </div>
-              <div>
-                <label htmlFor="role" className="text-sm font-medium mb-2 block text-white">
-                  Role
-                </label>
-                <select
-                  id="role"
-                  value={currentMember.role}
-                  onChange={(e) => setCurrentMember({...currentMember, role: e.target.value as 'admin' | 'salesperson'})}
-                  className="px-3 py-2 bg-[#0f133e] border border-white/20 rounded-md focus:outline-none focus:ring-2 focus:ring-crm-accent/50 text-white w-full"
-                >
-                  <option value="admin" className="bg-[#0f133e] text-white">admin</option>
-                  <option value="salesperson" className="bg-[#0f133e] text-white">salesperson</option>
-                </select>
-              </div>
-            </div>
-            
-            <DialogFooter className="mt-4">
-              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="bg-transparent hover:bg-white/10">
-                Cancel
-              </Button>
-              <Button type="submit" className="bg-red-600 text-white hover:bg-red-700">{currentMember.id ? 'Update' : 'Add'}</Button>
-            </DialogFooter>
-          </form>
+          <TeamMemberForm 
+            initialMember={currentMember} 
+            onClose={() => setIsDialogOpen(false)}
+            onSubmit={handleFormSubmit}
+          />
         </DialogContent>
       </Dialog>
     </div>

@@ -51,6 +51,10 @@ export interface UserActivity {
   activity_type: string;
   activity_detail?: any;
   occurred_at: string;
+  app_user?: {
+    first_name: string;
+    last_name: string;
+  };
 }
 
 export interface ActionItem {
