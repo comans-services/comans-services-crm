@@ -1,3 +1,4 @@
+
 # Welcome to your Lovable project
 
 ## Project info
@@ -35,6 +36,35 @@ npm i
 # Step 4: Start the development server with auto-reloading and an instant preview.
 npm run dev
 ```
+
+## Adding Co-authored-by to commits
+
+When making commits, you can add co-author information to give credit to collaborators. Use the following format in your commit message:
+
+```
+Your commit message
+
+Co-authored-by: NAME <EMAIL>
+```
+
+For example:
+
+```
+Fix: Update dashboard layout
+
+Co-authored-by: Jane Doe <jane@example.com>
+```
+
+To add multiple co-authors, simply add additional "Co-authored-by:" lines:
+
+```
+Fix: Update API integration
+
+Co-authored-by: Jane Doe <jane@example.com>
+Co-authored-by: John Smith <john@example.com>
+```
+
+**Important**: Make sure to leave a blank line between your commit message and the Co-authored-by line(s).
 
 **Edit a file directly in GitHub**
 
