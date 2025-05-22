@@ -49,29 +49,25 @@ export const useTeamMemberActions = () => {
     toast({
       title: "Confirm Deletion",
       description: "Are you sure you want to delete this team member?",
-      action: (
-        <button 
-          onClick={async () => {
-            try {
-              await removeTeamMember(id);
-              queryClient.invalidateQueries({ queryKey: ['team-members'] });
-              toast({
-                title: "Team member removed",
-                description: "The team member has been removed successfully.",
-              });
-            } catch (error: any) {
-              toast({
-                title: "Error",
-                description: error.message,
-                variant: "destructive"
-              });
-            }
-          }}
-          className="bg-red-600 text-white hover:bg-red-700 h-9 rounded-md px-3"
-        >
-          Delete
-        </button>
-      ),
+      action: {
+        label: "Delete",
+        onClick: async () => {
+          try {
+            await removeTeamMember(id);
+            queryClient.invalidateQueries({ queryKey: ['team-members'] });
+            toast({
+              title: "Team member removed",
+              description: "The team member has been removed successfully.",
+            });
+          } catch (error: any) {
+            toast({
+              title: "Error",
+              description: error.message,
+              variant: "destructive"
+            });
+          }
+        }
+      }
     });
   };
 
