@@ -217,11 +217,9 @@ export type Database = {
           company: string | null
           created_at: string
           deal_stage_id: string | null
-          deleted_at: string | null
           email: string
           first_name: string
           id: string
-          is_deleted: boolean | null
           last_name: string
           lead_source_id: string | null
           persona_id: string | null
@@ -234,11 +232,9 @@ export type Database = {
           company?: string | null
           created_at?: string
           deal_stage_id?: string | null
-          deleted_at?: string | null
           email: string
           first_name: string
           id?: string
-          is_deleted?: boolean | null
           last_name: string
           lead_source_id?: string | null
           persona_id?: string | null
@@ -251,11 +247,9 @@ export type Database = {
           company?: string | null
           created_at?: string
           deal_stage_id?: string | null
-          deleted_at?: string | null
           email?: string
           first_name?: string
           id?: string
-          is_deleted?: boolean | null
           last_name?: string
           lead_source_id?: string | null
           persona_id?: string | null
