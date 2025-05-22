@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit, MoreVertical, Users, Building } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -12,10 +11,13 @@ import {
 } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import ActionItemsList from '@/components/clients/ActionItemsList';
+import DocumentUploader from '@/components/clients/DocumentUploader';
 
 const Clients = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentTab, setCurrentTab] = useState('all');
+  const [actionItems, setActionItems] = useState([]);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -65,8 +67,10 @@ const Clients = () => {
 
   const hasError = clientsError || companiesError;
 
-  // Custom block styling for AI Generated Action Items and Email Communication History
-  const blackBoxStyle = "bg-black text-white border border-white/20 rounded-crm shadow-lg p-6";
+  // Handle action items extracted from document
+  const handleActionItemsExtracted = (items) => {
+    setActionItems(items);
+  };
 
   if (hasError) {
     return (
@@ -106,31 +110,18 @@ const Clients = () => {
       </div>
       
       {/* AI Generated Action Items */}
-      <div className={`${blackBoxStyle} mb-6`}>
+      <div className="bg-black text-white border border-white/20 rounded-crm shadow-lg p-6 mb-6">
         <h2 className="text-xl font-bold mb-4">AI Generated Action Items</h2>
-        <div className="space-y-3">
-          <div className="border border-white/10 p-4 rounded-md">
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="font-medium">Follow up with Acme Corp</h4>
-              <span className="bg-red-500/20 text-red-500 text-xs px-2 py-1 rounded-full">High Priority</span>
-            </div>
-            <p className="text-sm text-white/70 mb-2">The client hasn't responded to the last proposal. Send a follow-up email.</p>
-            <div className="text-xs text-white/50">Due: May 5, 2025</div>
-          </div>
-          
-          <div className="border border-white/10 p-4 rounded-md">
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="font-medium">Schedule demo with Globex</h4>
-              <span className="bg-yellow-500/20 text-yellow-500 text-xs px-2 py-1 rounded-full">Medium Priority</span>
-            </div>
-            <p className="text-sm text-white/70 mb-2">Client showed interest in new features. Schedule a product demonstration.</p>
-            <div className="text-xs text-white/50">Due: May 7, 2025</div>
-          </div>
-        </div>
+        <DocumentUploader 
+          clientId="general" 
+          clientName="all clients" 
+          onActionItemsExtracted={handleActionItemsExtracted}
+        />
+        <ActionItemsList items={actionItems} />
       </div>
       
       {/* Email Communication History */}
-      <div className={`${blackBoxStyle} mb-6`}>
+      <div className="bg-black text-white border border-white/20 rounded-crm shadow-lg p-6 mb-6">
         <h2 className="text-xl font-bold mb-4">Email Communication History</h2>
         <div className="space-y-4">
           {clients.slice(0, 3).flatMap(client => 
