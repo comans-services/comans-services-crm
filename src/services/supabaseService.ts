@@ -31,10 +31,17 @@ export const extractActionItemsFromDocument = async () => [];
 // Export base service functions with mock implementations
 export const setupRealTimeSubscription = () => (() => {});
 
-// Provide empty implementations for other exported functions
-export const signUp = async () => ({ user: null, session: null, error: 'Supabase connection removed' });
-export const signIn = async () => ({ user: null, session: null, error: 'Supabase connection removed' });
-export const signOut = async () => {};
-export const getCurrentSession = async () => ({ user: null, session: null });
-export const cleanupAuthState = () => {};
-export const recordCommunication = async () => ({});
+// Re-export auth services from authService
+export { signUp, signIn, signOut, getCurrentSession, cleanupAuthState } from './authService';
+export { recordCommunication } from './communicationService';
+
+// Fix missing method errors by providing mock implementations
+export const from = (table: string) => ({
+  select: () => ({ data: [], error: null }),
+  insert: () => ({ data: [], error: null }),
+  update: () => ({ data: [], error: null }),
+  delete: () => ({ data: [], error: null }),
+  eq: () => ({ data: [], error: null }),
+  in: () => ({ data: [], error: null }),
+  order: () => ({ data: [], error: null })
+});
