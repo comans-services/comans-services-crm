@@ -1,29 +1,16 @@
 
-import { supabase } from '@/integrations/supabase/client';
-import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+// Disconnected version of supabase base services
 
 /**
- * Sets up real-time subscriptions for a table
+ * Sets up real-time subscriptions for a table (disconnected version)
  */
 export const setupRealTimeSubscription = (
   table: string, 
   event: 'INSERT' | 'UPDATE' | 'DELETE' | '*',
-  callback: (payload: RealtimePostgresChangesPayload<Record<string, any>>) => void
+  callback: (payload: any) => void
 ): (() => void) => {
-  const channel = supabase
-    .channel(`table-changes:${table}`)
-    .on(
-      'postgres_changes' as any, // Type cast to fix TypeScript error
-      {
-        event: event,
-        schema: 'public',
-        table: table
-      },
-      callback
-    )
-    .subscribe();
-
+  // Return an empty cleanup function
   return () => {
-    supabase.removeChannel(channel);
+    // No-op since we're disconnected
   };
 };

@@ -1,46 +1,40 @@
 
-// This file is kept for backward compatibility
-// It re-exports everything from the modular services
+// This file is kept for backward compatibility but with disconnected functionality
+// It provides mock implementations that don't connect to Supabase
 
-// Export types
-export type { 
-  ProspectProfile,
-  ProspectEngagement,
-  SalesTracking,
-  TeamMember,
-  UserActivity,
-  ActionItem,
-  ProspectWithEngagement 
-} from './types/serviceTypes';
+// Export types without implementation
+export type ProspectProfile = any;
+export type ProspectEngagement = any;
+export type SalesTracking = any;
+export type TeamMember = any;
+export type UserActivity = any;
+export type ActionItem = any;
+export type ProspectWithEngagement = any;
 
-// Export prospect service functions
-export { 
-  getProspects,
-  getProspectById,
-  getProspectsByCompany,
-  createProspect
-} from './prospectService';
+// Export prospect service functions with mock implementations
+export const getProspects = async () => [];
+export const getProspectById = async () => null;
+export const getProspectsByCompany = async () => ({});
+export const createProspect = async () => ({});
 
-// Export team service functions
-export {
-  getTeamMembers,
-  addTeamMember,
-  updateTeamMember,
-  removeTeamMember
-} from './teamService';
+// Export team service functions with mock implementations
+export const getTeamMembers = async () => [];
+export const addTeamMember = async () => ({});
+export const updateTeamMember = async () => ({});
+export const removeTeamMember = async () => {};
 
-// Export activity service functions
-export {
-  getUserActivity,
-  recordUserActivity,
-  extractActionItemsFromDocument
-} from './activityService';
+// Export activity service functions with mock implementations
+export const getUserActivity = async () => [];
+export const recordUserActivity = async () => ({});
+export const extractActionItemsFromDocument = async () => [];
 
-// Export communication service functions
-export * from './communicationService';
+// Export base service functions with mock implementations
+export const setupRealTimeSubscription = () => (() => {});
 
-// Export auth service functions
-export * from './authService';
-
-// Export base service functions
-export { setupRealTimeSubscription } from './base/supabaseBase';
+// Provide empty implementations for other exported functions
+export const signUp = async () => ({ user: null, session: null, error: 'Supabase connection removed' });
+export const signIn = async () => ({ user: null, session: null, error: 'Supabase connection removed' });
+export const signOut = async () => {};
+export const getCurrentSession = async () => ({ user: null, session: null });
+export const cleanupAuthState = () => {};
+export const recordCommunication = async () => ({});

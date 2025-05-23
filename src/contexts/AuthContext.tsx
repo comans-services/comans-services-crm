@@ -1,7 +1,6 @@
 
-import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { AuthUser, AuthSession, getCurrentSession } from '@/services/authService';
+import React, { createContext, useState, useContext, ReactNode } from 'react';
+import { AuthUser, AuthSession } from '@/services/authService';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -13,7 +12,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
-  isLoading: true,
+  isLoading: false,
   isAuthenticated: false,
 });
 
@@ -24,55 +23,18 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [session, setSession] = useState<AuthSession | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    // Set up auth state listener first
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
-        
-        // If we've signed in, do any additional setup asynchronously
-        if (event === 'SIGNED_IN' && currentSession?.user) {
-          // Use setTimeout to prevent potential deadlocks
-          setTimeout(() => {
-            console.log('User signed in:', currentSession.user.email);
-          }, 0);
-        }
-      }
-    );
-
-    // Then check for existing session
-    const initializeAuth = async () => {
-      try {
-        const { session, user } = await getCurrentSession();
-        setSession(session);
-        setUser(user);
-      } catch (error) {
-        console.error('Error initializing auth:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    initializeAuth();
-
-    // Clean up subscription on unmount
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
+  // Default disconnected values
+  const contextValue = {
+    user: null,
+    session: null,
+    isLoading: isLoading,
+    isAuthenticated: false
+  };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      session, 
-      isLoading, 
-      isAuthenticated: !!user 
-    }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
