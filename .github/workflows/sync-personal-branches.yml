@@ -1,0 +1,39 @@
+# .github/workflows/sync-personal-branches.yml
+name: Sync main → env branches
+
+on:
+  push:
+    branches: [main]          # Run only when main moves
+
+permissions:
+  contents: write            # Let the job push back to the repo :contentReference[oaicite:0]{index=0}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    # One parallel job per branch
+    strategy:
+      matrix:
+        target_branch: [staging, Chinh, Mia, Dave]   # Add/remove names here
+
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0                            # Need both branches’ histories
+
+      - name: Fast-forward ${{ matrix.target_branch }}
+        run: |
+          git fetch origin
+
+          # Create local tracking branch if it’s missing
+          git switch ${{ matrix.target_branch }} \
+            || git switch -c ${{ matrix.target_branch }} origin/${{ matrix.target_branch }}
+
+          # Keep history linear – fail if the branch has unrelated work
+          git merge --ff-only origin/main \
+            || { echo "::error::${{ matrix.target_branch }} has diverged from main – resolve manually"; exit 1; }
+
+      - name: Push updated ref
+        run: git push origin HEAD:${{ matrix.target_branch }}
